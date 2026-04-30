@@ -7,7 +7,6 @@
 
 {% block content %}
 
-<!-- Page Heading -->
 <div class="page-heading">
     <h4>Security Logs</h4>
     <p>All recorded security events from monitored systems</p>
@@ -179,18 +178,15 @@
             flex-wrap:wrap;
             align-items:center;">
 
-    <!-- Upload Log File button -->
     <button class="btn btn-purple btn-sm"
             data-bs-toggle="modal"
             data-bs-target="#uploadModal">
         <i class="bi bi-upload me-1"></i>Upload Log File
     </button>
 
-    <!-- Clear All Logs button -->
     <form method="POST"
           action="{{ url_for('delete_all_logs') }}"
-          onsubmit="return confirm(
-            'Delete ALL logs? This cannot be undone.')">
+          onsubmit="return confirm('Delete ALL logs? This cannot be undone.')">
         <button type="submit"
                 class="btn btn-sm"
                 style="background:rgba(248,81,73,0.1);
@@ -200,9 +196,7 @@
         </button>
     </form>
 
-    <span style="margin-left:auto;
-                 color:#8b949e;
-                 font-size:13px;">
+    <span style="margin-left:auto; color:#8b949e; font-size:13px;">
         Showing {{ logs|length }} of {{ total_logs }} logs
     </span>
 
@@ -239,95 +233,80 @@
                       font-size:13px;">
             <thead>
                 <tr style="border-bottom:1px solid #30363d;">
-                    <th style="padding:12px 16px;
-                               color:#8b949e;
-                               font-weight:600;
-                               text-align:left;">#</th>
-                    <th style="padding:12px 16px;
-                               color:#8b949e;
-                               font-weight:600;
-                               text-align:left;">IP Address</th>
-                    <th style="padding:12px 16px;
-                               color:#8b949e;
-                               font-weight:600;
-                               text-align:left;">Event Type</th>
-                    <th style="padding:12px 16px;
-                               color:#8b949e;
-                               font-weight:600;
-                               text-align:left;">Message</th>
-                    <th style="padding:12px 16px;
-                               color:#8b949e;
-                               font-weight:600;
-                               text-align:left;">Source</th>
-                    <th style="padding:12px 16px;
-                               color:#8b949e;
-                               font-weight:600;
-                               text-align:left;">Timestamp</th>
-                    <th style="padding:12px 16px;
-                               color:#8b949e;
-                               font-weight:600;
-                               text-align:left;">Action</th>
+                    <th style="padding:12px 16px; color:#8b949e;
+                               font-weight:600; text-align:left;">#</th>
+                    <th style="padding:12px 16px; color:#8b949e;
+                               font-weight:600; text-align:left;">IP Address</th>
+                    <th style="padding:12px 16px; color:#8b949e;
+                               font-weight:600; text-align:left;">Event Type</th>
+                    <th style="padding:12px 16px; color:#8b949e;
+                               font-weight:600; text-align:left;">Message</th>
+                    <th style="padding:12px 16px; color:#8b949e;
+                               font-weight:600; text-align:left;">Source</th>
+                    <th style="padding:12px 16px; color:#8b949e;
+                               font-weight:600; text-align:left;">Timestamp</th>
+                    <th style="padding:12px 16px; color:#8b949e;
+                               font-weight:600; text-align:left;">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for log in logs %}
+
+                {# ── Store values in variables to avoid backslash errors ── #}
+                {% set log_ip     = log['ip_address'] %}
+                {% set log_event  = log['event_type'] %}
+                {% set log_id     = log['id'] %}
+                {% set is_blocked = log_ip in blocked_ip_list %}
+
                 <tr style="border-bottom:1px solid #21262d;
-                           {% if log['event_type'] == 'failed_login' %}
+                           {% if log_event == 'failed_login' %}
                                border-left:3px solid rgba(248,81,73,0.5);
-                           {% elif log['event_type'] == 'successful_login' %}
+                           {% elif log_event == 'successful_login' %}
                                border-left:3px solid rgba(63,185,80,0.5);
-                           {% elif log['event_type'] == 'suspicious_activity' %}
+                           {% elif log_event == 'suspicious_activity' %}
                                border-left:3px solid rgba(210,153,34,0.5);
                            {% endif %}">
 
                     <!-- ID -->
                     <td style="padding:12px 16px; color:#484f58;">
-                        {{ log['id'] }}
+                        {{ log_id }}
                     </td>
 
-                    <!-- IP Address -->
+                    <!-- IP Address — click to filter -->
                     <td style="padding:12px 16px;">
-                        <a href="{{ url_for('logs', search=log['ip_address']) }}"
+                        <a href="{{ url_for('logs', search=log_ip) }}"
                            style="text-decoration:none;"
                            title="Click to filter by this IP">
-                            <code style="color:#58a6ff;">
-                                {{ log['ip_address'] }}
-                            </code>
+                            <code style="color:#58a6ff;">{{ log_ip }}</code>
                         </a>
                     </td>
 
                     <!-- Event Type Badge -->
                     <td style="padding:12px 16px;">
-                        {% if log['event_type'] == 'failed_login' %}
+                        {% if log_event == 'failed_login' %}
                             <span style="background:rgba(248,81,73,0.12);
                                          color:#f85149;
                                          border:1px solid rgba(248,81,73,0.25);
-                                         padding:3px 10px;
-                                         border-radius:6px;
-                                         font-size:11px;
-                                         font-weight:600;">
+                                         padding:3px 10px; border-radius:6px;
+                                         font-size:11px; font-weight:600;">
                                 <i class="bi bi-x-circle-fill me-1"></i>
                                 Failed Login
                             </span>
-                        {% elif log['event_type'] == 'successful_login' %}
+                        {% elif log_event == 'successful_login' %}
                             <span style="background:rgba(63,185,80,0.12);
                                          color:#3fb950;
                                          border:1px solid rgba(63,185,80,0.25);
-                                         padding:3px 10px;
-                                         border-radius:6px;
-                                         font-size:11px;
-                                         font-weight:600;">
+                                         padding:3px 10px; border-radius:6px;
+                                         font-size:11px; font-weight:600;">
                                 <i class="bi bi-check-circle-fill me-1"></i>
                                 Successful Login
                             </span>
-                        {% elif log['event_type'] == 'suspicious_activity' %}
+                        {% elif log_event == 'suspicious_activity' %}
                             <span style="background:rgba(210,153,34,0.12);
                                          color:#d29922;
                                          border:1px solid rgba(210,153,34,0.25);
-                                         padding:3px 10px;
-                                         border-radius:6px;
-                                         font-size:11px;
-                                         font-weight:600;">
+                                         padding:3px 10px; border-radius:6px;
+                                         font-size:11px; font-weight:600;">
                                 <i class="bi bi-exclamation-triangle-fill me-1"></i>
                                 Suspicious
                             </span>
@@ -335,12 +314,10 @@
                             <span style="background:rgba(88,166,255,0.12);
                                          color:#58a6ff;
                                          border:1px solid rgba(88,166,255,0.25);
-                                         padding:3px 10px;
-                                         border-radius:6px;
-                                         font-size:11px;
-                                         font-weight:600;">
+                                         padding:3px 10px; border-radius:6px;
+                                         font-size:11px; font-weight:600;">
                                 <i class="bi bi-info-circle-fill me-1"></i>
-                                {{ log['event_type']|replace('_',' ')|title }}
+                                {{ log_event|replace('_',' ')|title }}
                             </span>
                         {% endif %}
                     </td>
@@ -353,40 +330,77 @@
                     <!-- Source -->
                     <td style="padding:12px 16px;">
                         <span style="background:rgba(88,166,255,0.1);
-                                     color:#58a6ff;
-                                     padding:2px 8px;
-                                     border-radius:4px;
-                                     font-size:11px;">
+                                     color:#58a6ff; padding:2px 8px;
+                                     border-radius:4px; font-size:11px;">
                             {{ log['source'] or 'system' }}
                         </span>
                     </td>
 
                     <!-- Timestamp -->
                     <td style="padding:12px 16px;
-                               color:#8b949e;
-                               font-size:12px;">
+                               color:#8b949e; font-size:12px;">
                         {{ log['timestamp'] }}
                     </td>
 
-                    <!-- Delete button -->
+                    <!-- Actions: Block IP + Delete -->
                     <td style="padding:12px 16px;">
-                        <form method="POST"
-                              action="{{ url_for('delete_log',
-                                                 log_id=log['id']) }}"
-                              onsubmit="return confirm(
-                                'Delete this log entry?')">
-                            <button type="submit"
-                                    title="Delete"
-                                    style="background:rgba(248,81,73,0.1);
-                                           color:#f85149;
-                                           border:1px solid rgba(248,81,73,0.3);
-                                           border-radius:6px;
-                                           padding:4px 10px;
-                                           cursor:pointer;
-                                           font-size:13px;">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </form>
+                        <div style="display:flex; gap:6px; align-items:center;">
+
+                            <!-- Block IP button OR Already Blocked label -->
+                            {% if is_blocked %}
+                                <span style="background:rgba(248,81,73,0.08);
+                                             color:#8b949e;
+                                             border:1px solid #30363d;
+                                             border-radius:6px;
+                                             padding:4px 8px;
+                                             font-size:11px;">
+                                    <i class="bi bi-slash-circle me-1"></i>
+                                    Blocked
+                                </span>
+                            {% else %}
+                                <form method="POST"
+                                      action="{{ url_for('block_ip_from_log') }}">
+                                    <input type="hidden"
+                                           name="ip_address"
+                                           value="{{ log_ip }}">
+                                    <input type="hidden"
+                                           name="reason"
+                                           value="Blocked from logs — event: {{ log_event }}">
+                                    <button type="submit"
+                                            title="Block {{ log_ip }}"
+                                            onclick="return confirm('Block IP {{ log_ip }}?')"
+                                            style="background:rgba(210,153,34,0.1);
+                                                   color:#d29922;
+                                                   border:1px solid rgba(210,153,34,0.3);
+                                                   border-radius:6px;
+                                                   padding:4px 10px;
+                                                   cursor:pointer;
+                                                   font-size:13px;
+                                                   white-space:nowrap;">
+                                        <i class="bi bi-slash-circle"></i>
+                                        Block IP
+                                    </button>
+                                </form>
+                            {% endif %}
+
+                            <!-- Delete log button -->
+                            <form method="POST"
+                                  action="{{ url_for('delete_log', log_id=log_id) }}">
+                                <button type="submit"
+                                        title="Delete log"
+                                        onclick="return confirm('Delete this log entry?')"
+                                        style="background:rgba(248,81,73,0.1);
+                                               color:#f85149;
+                                               border:1px solid rgba(248,81,73,0.3);
+                                               border-radius:6px;
+                                               padding:4px 10px;
+                                               cursor:pointer;
+                                               font-size:13px;">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+
+                        </div>
                     </td>
 
                 </tr>
@@ -396,13 +410,10 @@
     </div>
 
     {% else %}
-    <!-- Empty state -->
     <div style="text-align:center; padding:50px 20px;">
         <i class="bi bi-inbox"
-           style="font-size:40px;
-                  color:#484f58;
-                  display:block;
-                  margin-bottom:12px;"></i>
+           style="font-size:40px; color:#484f58;
+                  display:block; margin-bottom:12px;"></i>
         {% if search or event_type or date_from %}
             <p style="color:#8b949e;">
                 No logs match your search — try different filters
@@ -426,10 +437,7 @@
 
 </div>
 
-
-<!-- ══════════════════════════════════════════════════════════
-     UPLOAD MODAL
-════════════════════════════════════════════════════════════ -->
+<!-- ── UPLOAD MODAL ────────────────────────────────────────── -->
 <div class="modal fade" id="uploadModal" tabindex="-1"
      aria-labelledby="uploadModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -438,8 +446,7 @@
                     border:1px solid #30363d;
                     color:#e6edf3;">
 
-            <div class="modal-header"
-                 style="border-color:#30363d;">
+            <div class="modal-header" style="border-color:#30363d;">
                 <h5 class="modal-title" id="uploadModalLabel">
                     <i class="bi bi-upload me-2 text-info"></i>
                     Upload Log File
@@ -453,14 +460,12 @@
 
                 <div style="background:rgba(88,166,255,0.1);
                             border:1px solid rgba(88,166,255,0.2);
-                            color:#58a6ff;
-                            padding:12px;
-                            border-radius:8px;
-                            font-size:13px;
+                            color:#58a6ff; padding:12px;
+                            border-radius:8px; font-size:13px;
                             margin-bottom:16px;">
                     <i class="bi bi-info-circle me-2"></i>
                     Run <code>generate_test_logs.py</code> on your PC
-                    to create a <strong>test_logs.json</strong> file,
+                    to create <strong>test_logs.json</strong>,
                     then upload it here.
                 </div>
 
@@ -469,10 +474,8 @@
                 </p>
                 <pre style="background:#0d1117;
                             border:1px solid #30363d;
-                            border-radius:8px;
-                            padding:12px;
-                            font-size:11px;
-                            color:#8b949e;
+                            border-radius:8px; padding:12px;
+                            font-size:11px; color:#8b949e;
                             overflow-x:auto;">[
   {
     "ip_address": "192.168.1.1",
@@ -486,12 +489,9 @@
                       action="{{ url_for('upload_logs') }}"
                       enctype="multipart/form-data"
                       style="margin-top:16px;">
-
                     <div style="margin-bottom:16px;">
-                        <label style="color:#8b949e;
-                                      font-size:13px;
-                                      display:block;
-                                      margin-bottom:6px;">
+                        <label style="color:#8b949e; font-size:13px;
+                                      display:block; margin-bottom:6px;">
                             Select .json file from your PC
                         </label>
                         <input type="file"
@@ -503,14 +503,12 @@
                                       color:#e6edf3;"
                                required>
                     </div>
-
-                    <button type="submit"
-                            class="btn btn-purple w-100">
+                    <button type="submit" class="btn btn-purple w-100">
                         <i class="bi bi-upload me-2"></i>
                         Upload & Import Logs
                     </button>
-
                 </form>
+
             </div>
         </div>
     </div>

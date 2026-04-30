@@ -21,7 +21,6 @@ with app.app_context():
 #  DECORATORS & HELPERS
 # ═══════════════════════════════════════════════════════════════
 
-# ── LOGIN REQUIRED DECORATOR ─────────────────────────────────────
 def login_required(f):
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
@@ -31,7 +30,6 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# ── HELPER: LOG LOGIN ATTEMPT ────────────────────────────────────
 def log_login_attempt(ip_address, username, success):
     """Save every login attempt to the database."""
     db = get_db()
@@ -42,7 +40,6 @@ def log_login_attempt(ip_address, username, success):
     db.commit()
     db.close()
 
-# ── HELPER: CHECK BRUTE FORCE ────────────────────────────────────
 def is_brute_force(ip_address):
     """Check if an IP has failed more than 5 times in the last 60 seconds."""
     db = get_db()
@@ -59,45 +56,35 @@ def is_brute_force(ip_address):
 #  AUTHENTICATION ROUTES
 # ═══════════════════════════════════════════════════════════════
 
-# ── HOME ─────────────────────────────────────────────────────────
 @app.route('/')
 def index():
-    """Redirect to dashboard or login."""
     if 'user' in session:
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
-# ── LOGIN (GET) ──────────────────────────────────────────────────
 @app.route('/login', methods=['GET'])
 def login():
-    """Display the login page."""
     if 'user' in session:
         return redirect(url_for('dashboard'))
     return render_template('login.html')
 
-# ── LOGIN (POST) ─────────────────────────────────────────────────
 @app.route('/login', methods=['POST'])
 def login_post():
-    """Handle login form submission."""
     username   = request.form.get('username', '').strip()
     password   = request.form.get('password', '').strip()
     ip_address = request.remote_addr
 
-    # STEP 1: Check for brute force
     if is_brute_force(ip_address):
         flash('Too many failed attempts. Please wait 60 seconds.', 'danger')
         return redirect(url_for('login'))
 
-    # STEP 2: Find user in database
     db   = get_db()
     user = db.execute(
         'SELECT * FROM users WHERE username = ?', (username,)
     ).fetchone()
     db.close()
 
-    # STEP 3: Check password
     if user and check_password_hash(user['password'], password):
-        # ✅ Correct credentials
         log_login_attempt(ip_address, username, success=True)
         session.permanent = True
         session['user']   = username
@@ -105,15 +92,12 @@ def login_post():
         flash(f'Welcome back, {username}!', 'success')
         return redirect(url_for('dashboard'))
     else:
-        # ❌ Wrong credentials
         log_login_attempt(ip_address, username, success=False)
         flash('Invalid username or password.', 'danger')
         return redirect(url_for('login'))
 
-# ── LOGOUT ───────────────────────────────────────────────────────
 @app.route('/logout')
 def logout():
-    """Clear session and redirect to login."""
     session.clear()
     flash('You have been logged out successfully.', 'success')
     return redirect(url_for('login'))
@@ -125,12 +109,9 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    """Main dashboard page."""
     db = get_db()
 
-    # ── Stat card counts ────────────────────────────────────────
-    total_logs     = db.execute(
-        'SELECT COUNT(*) FROM logs').fetchone()[0]
+    total_logs     = db.execute('SELECT COUNT(*) FROM logs').fetchone()[0]
     total_alerts   = db.execute(
         'SELECT COUNT(*) FROM alerts WHERE status = "open"').fetchone()[0]
     total_blocked  = db.execute(
@@ -139,13 +120,11 @@ def dashboard():
         'SELECT COUNT(*) FROM alerts WHERE status = "resolved"').fetchone()[0]
     alert_count    = total_alerts
 
-    # ── Recent data ─────────────────────────────────────────────
     recent_logs   = db.execute(
         'SELECT * FROM logs ORDER BY timestamp DESC LIMIT 5').fetchall()
     recent_alerts = db.execute(
         'SELECT * FROM alerts ORDER BY timestamp DESC LIMIT 5').fetchall()
 
-    # ── Chart 1: Login activity last 7 days ─────────────────────
     chart_labels  = []
     chart_success = []
     chart_failed  = []
@@ -171,11 +150,9 @@ def dashboard():
         chart_success.append(success)
         chart_failed.append(failed)
 
-    # ── Chart 2: Alert types ─────────────────────────────────────
     alert_type_rows = db.execute('''
         SELECT alert_type, COUNT(*) as cnt
-        FROM alerts
-        GROUP BY alert_type
+        FROM alerts GROUP BY alert_type
     ''').fetchall()
 
     alert_types  = [r['alert_type'] for r in alert_type_rows] or ['No Alerts']
@@ -204,7 +181,6 @@ def dashboard():
 @app.route('/alerts')
 @login_required
 def alerts():
-    """Alerts page."""
     db = get_db()
     all_alerts  = db.execute(
         'SELECT * FROM alerts ORDER BY timestamp DESC').fetchall()
@@ -222,21 +198,15 @@ def alerts():
 @app.route('/logs')
 @login_required
 def logs():
-    """Logs page with search and filter support."""
     db = get_db()
 
-    # ── Get filter values from URL ───────────────────────────────
-    # All filters are completely optional
-    # User can search by IP alone without filling other fields
     search     = request.args.get('search', '').strip()
     event_type = request.args.get('event_type', '').strip()
     date_from  = request.args.get('date_from', '').strip()
 
-    # ── Build dynamic query — only apply filters that are filled──
     query  = 'SELECT * FROM logs WHERE 1=1'
     params = []
 
-    # If user types just an IP address, it will match perfectly
     if search:
         query += '''
             AND (ip_address LIKE ?
@@ -245,12 +215,10 @@ def logs():
         '''
         params.extend([f'%{search}%', f'%{search}%', f'%{search}%'])
 
-    # Only filter by event type if user selected one
     if event_type:
         query += ' AND event_type = ?'
         params.append(event_type)
 
-    # Only filter by date if user picked one
     if date_from:
         query += ' AND date(timestamp) >= ?'
         params.append(date_from)
@@ -259,7 +227,6 @@ def logs():
 
     all_logs = db.execute(query, params).fetchall()
 
-    # ── Stat counts ──────────────────────────────────────────────
     total_logs = db.execute(
         'SELECT COUNT(*) FROM logs').fetchone()[0]
     failed_count = db.execute(
@@ -272,15 +239,20 @@ def logs():
         'SELECT COUNT(*) FROM logs '
         'WHERE event_type = "suspicious_activity"').fetchone()[0]
 
-    # ── Unique event types for dropdown ──────────────────────────
     event_types = db.execute(
         'SELECT DISTINCT event_type FROM logs ORDER BY event_type'
     ).fetchall()
 
-    # ── Alert badge count for sidebar ───────────────────────────
     alert_count = db.execute(
         'SELECT COUNT(*) FROM alerts WHERE status = "open"'
     ).fetchone()[0]
+
+    # ── Get all currently blocked IPs ────────────────────────────
+    # Used to show "Already Blocked" label on blocked IPs in table
+    blocked_ip_list = [
+        row['ip_address'] for row in
+        db.execute('SELECT ip_address FROM blocked_ips').fetchall()
+    ]
 
     db.close()
 
@@ -294,14 +266,14 @@ def logs():
                            alert_count=alert_count,
                            search=search,
                            event_type=event_type,
-                           date_from=date_from)
+                           date_from=date_from,
+                           blocked_ip_list=blocked_ip_list)
 
 
 # ── UPLOAD LOG FILE ──────────────────────────────────────────────
 @app.route('/upload-logs', methods=['POST'])
 @login_required
 def upload_logs():
-    """Accept a JSON log file uploaded from the user's PC."""
     if 'logfile' not in request.files:
         flash('No file selected.', 'danger')
         return redirect(url_for('logs'))
@@ -361,7 +333,6 @@ def upload_logs():
 @app.route('/delete-log/<int:log_id>', methods=['POST'])
 @login_required
 def delete_log(log_id):
-    """Delete a single log entry by ID."""
     db = get_db()
     db.execute('DELETE FROM logs WHERE id = ?', (log_id,))
     db.commit()
@@ -374,12 +345,45 @@ def delete_log(log_id):
 @app.route('/delete-all-logs', methods=['POST'])
 @login_required
 def delete_all_logs():
-    """Delete every log entry from the database."""
     db = get_db()
     db.execute('DELETE FROM logs')
     db.commit()
     db.close()
     flash('🗑️ All logs have been cleared.', 'success')
+    return redirect(url_for('logs'))
+
+
+# ── BLOCK IP FROM LOGS PAGE ──────────────────────────────────────
+@app.route('/block-ip-from-log', methods=['POST'])
+@login_required
+def block_ip_from_log():
+    """Block an IP address directly from the logs page."""
+    ip_address = request.form.get('ip_address', '').strip()
+    reason     = request.form.get('reason', 'Blocked from logs page').strip()
+
+    if not ip_address:
+        flash('No IP address provided.', 'danger')
+        return redirect(url_for('logs'))
+
+    db = get_db()
+
+    # Check if already blocked
+    already = db.execute(
+        'SELECT id FROM blocked_ips WHERE ip_address = ?',
+        (ip_address,)
+    ).fetchone()
+
+    if already:
+        flash(f'⚠️ {ip_address} is already blocked.', 'warning')
+    else:
+        db.execute(
+            'INSERT INTO blocked_ips (ip_address, reason) VALUES (?, ?)',
+            (ip_address, reason)
+        )
+        db.commit()
+        flash(f'🚫 {ip_address} has been blocked successfully!', 'success')
+
+    db.close()
     return redirect(url_for('logs'))
 
 # ═══════════════════════════════════════════════════════════════
@@ -389,7 +393,6 @@ def delete_all_logs():
 @app.route('/blocked')
 @login_required
 def blocked():
-    """Blocked IPs page."""
     db = get_db()
     blocked_ips = db.execute(
         'SELECT * FROM blocked_ips ORDER BY blocked_at DESC').fetchall()
@@ -400,6 +403,28 @@ def blocked():
                            blocked_ips=blocked_ips,
                            alert_count=alert_count)
 
+
+# ── UNBLOCK IP ───────────────────────────────────────────────────
+@app.route('/unblock-ip/<int:ip_id>', methods=['POST'])
+@login_required
+def unblock_ip(ip_id):
+    """Remove an IP from the blocked list."""
+    db = get_db()
+    ip_row = db.execute(
+        'SELECT ip_address FROM blocked_ips WHERE id = ?',
+        (ip_id,)
+    ).fetchone()
+
+    if ip_row:
+        db.execute('DELETE FROM blocked_ips WHERE id = ?', (ip_id,))
+        db.commit()
+        flash(f'✅ {ip_row["ip_address"]} has been unblocked.', 'success')
+    else:
+        flash('IP not found.', 'danger')
+
+    db.close()
+    return redirect(url_for('blocked'))
+
 # ═══════════════════════════════════════════════════════════════
 #  LIVE MONITOR
 # ═══════════════════════════════════════════════════════════════
@@ -407,7 +432,6 @@ def blocked():
 @app.route('/live-monitor')
 @login_required
 def live_monitor():
-    """Live monitoring page."""
     db = get_db()
     alert_count = db.execute(
         'SELECT COUNT(*) FROM alerts WHERE status = "open"').fetchone()[0]
