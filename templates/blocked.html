@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Blocked IPs{% endblock %}
+{% block page_title %}
+    <i class="bi bi-slash-circle-fill me-2"></i>Blocked IPs
+{% endblock %}
+{% block content %}
+<div class="page-heading">
+    <h4>Blocked IP Addresses</h4>
+    <p>IPs currently blocked from accessing monitored systems</p>
+</div>
+<div class="dark-card">
+    <div class="card-header">
+        <span><i class="bi bi-slash-circle-fill text-danger me-2"></i>
+        Blocked IPs</span>
+    </div>
+    <div class="card-body">
+        {% if blocked_ips %}
+        <table class="table table-dark table-hover">
+            <thead>
+                <tr>
+                    <th>IP Address</th>
+                    <th>Reason</th>
+                    <th>Blocked At</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ip in blocked_ips %}
+                <tr>
+                    <td><code style="color:#f85149">{{ ip['ip_address'] }}</code></td>
+                    <td>{{ ip['reason'] }}</td>
+                    <td style="color:#8b949e;font-size:12px">{{ ip['blocked_at'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-shield-check text-success"></i>
+            <p>No IPs are currently blocked</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

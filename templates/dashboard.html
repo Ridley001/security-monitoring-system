@@ -1,17 +1,22 @@
 {% extends "base.html" %}
-
 {% block title %}Dashboard{% endblock %}
+
 {% block page_title %}
     <i class="bi bi-speedometer2 me-2"></i>Dashboard Overview
 {% endblock %}
 
 {% block content %}
 
-<!-- ── STAT CARDS ROW ──────────────────────────────────────── -->
+<!-- Page Heading -->
+<div class="page-heading">
+    <h4>Security Overview</h4>
+    <p>Real-time monitoring and incident summary</p>
+</div>
+
+<!-- ── ROW 1: STAT CARDS ──────────────────────────────────── -->
 <div class="row g-4 mb-4">
 
-    <!-- Total Logs Card -->
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="stat-card">
             <div class="stat-icon blue">
                 <i class="bi bi-journal-text"></i>
@@ -19,12 +24,14 @@
             <div class="stat-info">
                 <h3>{{ total_logs }}</h3>
                 <p>Total Logs</p>
+                <div class="stat-trend up">
+                    <i class="bi bi-arrow-up"></i> Live tracking
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Open Alerts Card -->
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="stat-card">
             <div class="stat-icon red">
                 <i class="bi bi-exclamation-triangle-fill"></i>
@@ -32,12 +39,14 @@
             <div class="stat-info">
                 <h3>{{ total_alerts }}</h3>
                 <p>Open Alerts</p>
+                <div class="stat-trend up">
+                    <i class="bi bi-arrow-up"></i> Needs attention
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Blocked IPs Card -->
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="stat-card">
             <div class="stat-icon yellow">
                 <i class="bi bi-slash-circle-fill"></i>
@@ -45,55 +54,112 @@
             <div class="stat-info">
                 <h3>{{ total_blocked }}</h3>
                 <p>Blocked IPs</p>
+                <div class="stat-trend down">
+                    <i class="bi bi-shield-check"></i> Protected
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon green">
+                <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ total_resolved }}</h3>
+                <p>Resolved Alerts</p>
+                <div class="stat-trend down">
+                    <i class="bi bi-check2"></i> All clear
+                </div>
             </div>
         </div>
     </div>
 
 </div>
 
-<!-- ── RECENT ACTIVITY ROW ────────────────────────────────── -->
+<!-- ── ROW 2: CHARTS ──────────────────────────────────────── -->
+<div class="row g-4 mb-4">
+
+    <!-- Login Activity Chart -->
+    <div class="col-md-8">
+        <div class="dark-card">
+            <div class="card-header">
+                <span>
+                    <i class="bi bi-bar-chart-fill text-info me-2"></i>
+                    Login Activity (Last 7 Days)
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="loginChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Types Pie Chart -->
+    <div class="col-md-4">
+        <div class="dark-card">
+            <div class="card-header">
+                <span>
+                    <i class="bi bi-pie-chart-fill text-warning me-2"></i>
+                    Alert Types
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="alertChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ── ROW 3: RECENT TABLES ───────────────────────────────── -->
 <div class="row g-4">
 
     <!-- Recent Alerts -->
     <div class="col-md-6">
-        <div class="card dark-card">
+        <div class="dark-card">
             <div class="card-header">
-                <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>
-                Recent Alerts
+                <span>
+                    <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>
+                    Recent Alerts
+                </span>
+                <a href="{{ url_for('alerts') }}"
+                   class="btn btn-sm btn-purple">View All</a>
             </div>
-            <div class="card-body p-0">
+            <div class="card-body">
                 {% if recent_alerts %}
-                    <table class="table table-dark table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>IP Address</th>
-                                <th>Type</th>
-                                <th>Severity</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for alert in recent_alerts %}
-                            <tr>
-                                <td>{{ alert['ip_address'] }}</td>
-                                <td>{{ alert['alert_type'] }}</td>
-                                <td>
-                                    {% if alert['severity'] == 'high' %}
-                                        <span class="badge bg-danger">High</span>
-                                    {% elif alert['severity'] == 'medium' %}
-                                        <span class="badge bg-warning text-dark">Medium</span>
-                                    {% else %}
-                                        <span class="badge bg-success">Low</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <table class="table table-dark table-hover">
+                    <thead>
+                        <tr>
+                            <th>IP Address</th>
+                            <th>Type</th>
+                            <th>Severity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for alert in recent_alerts %}
+                        <tr class="alert-row-{{ alert['severity'] }}">
+                            <td><code style="color:#58a6ff">{{ alert['ip_address'] }}</code></td>
+                            <td>{{ alert['alert_type'] }}</td>
+                            <td>
+                                <span class="badge-{{ alert['severity'] }}">
+                                    {{ alert['severity']|capitalize }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
                 {% else %}
-                    <div class="text-center text-muted py-4">
-                        <i class="bi bi-check-circle fs-3 text-success"></i>
-                        <p class="mt-2">No open alerts</p>
-                    </div>
+                <div class="empty-state">
+                    <i class="bi bi-check-circle text-success"></i>
+                    <p>No open alerts — system is secure</p>
+                </div>
                 {% endif %}
             </div>
         </div>
@@ -101,36 +167,42 @@
 
     <!-- Recent Logs -->
     <div class="col-md-6">
-        <div class="card dark-card">
+        <div class="dark-card">
             <div class="card-header">
-                <i class="bi bi-journal-text text-info me-2"></i>
-                Recent Logs
+                <span>
+                    <i class="bi bi-journal-text text-info me-2"></i>
+                    Recent Logs
+                </span>
+                <a href="{{ url_for('logs') }}"
+                   class="btn btn-sm btn-purple">View All</a>
             </div>
-            <div class="card-body p-0">
+            <div class="card-body">
                 {% if recent_logs %}
-                    <table class="table table-dark table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>IP Address</th>
-                                <th>Event</th>
-                                <th>Time</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for log in recent_logs %}
-                            <tr>
-                                <td>{{ log['ip_address'] }}</td>
-                                <td>{{ log['event_type'] }}</td>
-                                <td>{{ log['timestamp'] }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <table class="table table-dark table-hover">
+                    <thead>
+                        <tr>
+                            <th>IP Address</th>
+                            <th>Event</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in recent_logs %}
+                        <tr>
+                            <td><code style="color:#58a6ff">{{ log['ip_address'] }}</code></td>
+                            <td>{{ log['event_type'] }}</td>
+                            <td style="color:#8b949e; font-size:12px">
+                                {{ log['timestamp'] }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
                 {% else %}
-                    <div class="text-center text-muted py-4">
-                        <i class="bi bi-inbox fs-3"></i>
-                        <p class="mt-2">No logs yet</p>
-                    </div>
+                <div class="empty-state">
+                    <i class="bi bi-inbox"></i>
+                    <p>No logs recorded yet</p>
+                </div>
                 {% endif %}
             </div>
         </div>
@@ -138,4 +210,85 @@
 
 </div>
 
+{% endblock %}
+
+<!-- ── CHARTS JAVASCRIPT ───────────────────────────────────── -->
+{% block scripts %}
+<script>
+// ── LOGIN ACTIVITY BAR CHART ──────────────────────────────────
+const loginCtx = document.getElementById('loginChart').getContext('2d');
+new Chart(loginCtx, {
+    type: 'bar',
+    data: {
+        labels: {{ chart_labels | tojson }},
+        datasets: [
+            {
+                label: 'Successful Logins',
+                data: {{ chart_success | tojson }},
+                backgroundColor: 'rgba(63, 185, 80, 0.7)',
+                borderColor: '#3fb950',
+                borderWidth: 1,
+                borderRadius: 6,
+            },
+            {
+                label: 'Failed Logins',
+                data: {{ chart_failed | tojson }},
+                backgroundColor: 'rgba(248, 81, 73, 0.7)',
+                borderColor: '#f85149',
+                borderWidth: 1,
+                borderRadius: 6,
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { labels: { color: '#8b949e', font: { size: 12 } } }
+        },
+        scales: {
+            x: {
+                ticks: { color: '#8b949e' },
+                grid:  { color: 'rgba(48,54,61,0.5)' }
+            },
+            y: {
+                ticks: { color: '#8b949e' },
+                grid:  { color: 'rgba(48,54,61,0.5)' },
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// ── ALERT TYPES DOUGHNUT CHART ────────────────────────────────
+const alertCtx = document.getElementById('alertChart').getContext('2d');
+new Chart(alertCtx, {
+    type: 'doughnut',
+    data: {
+        labels: {{ alert_types | tojson }},
+        datasets: [{
+            data: {{ alert_counts | tojson }},
+            backgroundColor: [
+                'rgba(248, 81,  73,  0.8)',
+                'rgba(210, 153,  34, 0.8)',
+                'rgba(88,  166, 255, 0.8)',
+                'rgba(123, 111, 240, 0.8)',
+                'rgba(63,  185,  80, 0.8)',
+            ],
+            borderColor: '#161b22',
+            borderWidth: 3,
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: { color: '#8b949e', font: { size: 11 }, padding: 12 }
+            }
+        }
+    }
+});
+</script>
 {% endblock %}

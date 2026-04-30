@@ -3,61 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Security Monitor — {% block title %}{% endblock %}</title>
+    <title>SecureWatch — {% block title %}{% endblock %}</title>
 
-    <!-- Bootstrap CSS (gives us beautiful styling for free) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-
-    <!-- Our custom CSS -->
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
 </head>
 
 <body>
 
-<!-- ── SIDEBAR ──────────────────────────────────────────────── -->
-<div class="sidebar" id="sidebar">
+<!-- ── FLASH MESSAGES (top right popup) ─────────────────────── -->
+<div class="flash-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {% if category == 'success' %}
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                {% elif category == 'danger' %}
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                {% else %}
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                {% endif %}
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+</div>
 
-    <!-- Logo / Brand -->
-    <div class="sidebar-brand">
+<!-- ── SIDEBAR ──────────────────────────────────────────────── -->
+<div class="sidebar">
+
+    <!-- Brand -->
+    <a href="{{ url_for('dashboard') }}" class="sidebar-brand">
         <i class="bi bi-shield-lock-fill"></i>
         <span>SecureWatch</span>
-    </div>
+    </a>
 
-    <!-- Navigation Links -->
     <nav class="sidebar-nav">
+
+        <div class="sidebar-label">Main Menu</div>
+
         <a href="{{ url_for('dashboard') }}"
            class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
-            <i class="bi bi-speedometer2"></i> Dashboard
+            <i class="bi bi-speedometer2"></i>
+            Dashboard
         </a>
 
-        <a href="#"
+        <a href="{{ url_for('alerts') }}"
            class="nav-link {% if request.endpoint == 'alerts' %}active{% endif %}">
-            <i class="bi bi-exclamation-triangle-fill"></i> Alerts
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            Alerts
+            {% if alert_count and alert_count > 0 %}
+                <span class="nav-badge">{{ alert_count }}</span>
+            {% endif %}
         </a>
 
-        <a href="#"
+        <a href="{{ url_for('logs') }}"
            class="nav-link {% if request.endpoint == 'logs' %}active{% endif %}">
-            <i class="bi bi-journal-text"></i> Logs
+            <i class="bi bi-journal-text"></i>
+            Logs
         </a>
 
-        <a href="#"
+        <a href="{{ url_for('blocked') }}"
            class="nav-link {% if request.endpoint == 'blocked' %}active{% endif %}">
-            <i class="bi bi-slash-circle-fill"></i> Blocked IPs
+            <i class="bi bi-slash-circle-fill"></i>
+            Blocked IPs
         </a>
 
-        <a href="#"
+        <div class="sidebar-label">Monitoring</div>
+
+        <a href="{{ url_for('live_monitor') }}"
            class="nav-link {% if request.endpoint == 'live_monitor' %}active{% endif %}">
-            <i class="bi bi-activity"></i> Live Monitor
+            <i class="bi bi-activity"></i>
+            Live Monitor
         </a>
+
     </nav>
 
-    <!-- Logout at the bottom -->
     <div class="sidebar-footer">
         <a href="{{ url_for('logout') }}" class="nav-link text-danger">
-            <i class="bi bi-box-arrow-left"></i> Logout
+            <i class="bi bi-box-arrow-left"></i>
+            Logout
         </a>
     </div>
 </div>
@@ -65,12 +94,17 @@
 <!-- ── MAIN CONTENT ──────────────────────────────────────────── -->
 <div class="main-content">
 
-    <!-- Top Header Bar -->
+    <!-- Top Header -->
     <div class="top-header">
-        <h5 class="mb-0">{% block page_title %}{% endblock %}</h5>
-        <div class="d-flex align-items-center gap-2">
-            <i class="bi bi-person-circle fs-5"></i>
-            <span>{{ session.get('user', 'Admin') }}</span>
+        <h5 class="mb-0">
+            {% block page_title %}{% endblock %}
+        </h5>
+        <div class="header-right">
+            <div class="status-dot">System Online</div>
+            <div class="admin-badge">
+                <i class="bi bi-person-fill"></i>
+                {{ session.get('user', 'Admin') }}
+            </div>
         </div>
     </div>
 
@@ -81,9 +115,8 @@
 
 </div>
 
-<!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% block scripts %}{% endblock %}
 
 </body>

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Alerts{% endblock %}
+{% block page_title %}
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>Alerts
+{% endblock %}
+{% block content %}
+<div class="page-heading">
+    <h4>Security Alerts</h4>
+    <p>All detected threats and incidents</p>
+</div>
+<div class="dark-card">
+    <div class="card-header">
+        <span><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>
+        All Alerts</span>
+    </div>
+    <div class="card-body">
+        {% if alerts %}
+        <table class="table table-dark table-hover">
+            <thead>
+                <tr>
+                    <th>IP Address</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Severity</th>
+                    <th>Status</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for alert in alerts %}
+                <tr class="alert-row-{{ alert['severity'] }}">
+                    <td><code style="color:#58a6ff">{{ alert['ip_address'] }}</code></td>
+                    <td>{{ alert['alert_type'] }}</td>
+                    <td>{{ alert['description'] }}</td>
+                    <td><span class="badge-{{ alert['severity'] }}">
+                        {{ alert['severity']|capitalize }}</span></td>
+                    <td><span class="badge-{{ alert['status'] }}">
+                        {{ alert['status']|capitalize }}</span></td>
+                    <td style="color:#8b949e;font-size:12px">{{ alert['timestamp'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-check-circle text-success"></i>
+            <p>No alerts found — system is secure</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

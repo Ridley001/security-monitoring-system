@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Logs{% endblock %}
+{% block page_title %}
+    <i class="bi bi-journal-text me-2"></i>Security Logs
+{% endblock %}
+{% block content %}
+<div class="page-heading">
+    <h4>Security Logs</h4>
+    <p>All recorded security events</p>
+</div>
+<div class="dark-card">
+    <div class="card-header">
+        <span><i class="bi bi-journal-text text-info me-2"></i>All Logs</span>
+    </div>
+    <div class="card-body">
+        {% if logs %}
+        <table class="table table-dark table-hover">
+            <thead>
+                <tr>
+                    <th>IP Address</th>
+                    <th>Event Type</th>
+                    <th>Message</th>
+                    <th>Source</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td><code style="color:#58a6ff">{{ log['ip_address'] }}</code></td>
+                    <td>{{ log['event_type'] }}</td>
+                    <td>{{ log['message'] }}</td>
+                    <td>{{ log['source'] }}</td>
+                    <td style="color:#8b949e;font-size:12px">{{ log['timestamp'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <p>No logs recorded yet</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
