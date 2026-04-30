@@ -458,3 +458,44 @@ body {
 .log-row-suspicious_activity {
     border-left: 3px solid rgba(210, 153, 34, 0.5);
 }
+/* ── DARK FORM INPUTS ────────────────────────────────────────── */
+.dark-input {
+    background: #1c2128 !important;
+    border: 1px solid #30363d !important;
+    color: #e6edf3 !important;
+}
+
+.dark-input:focus {
+    border-color: #7b6ff0 !important;
+    box-shadow: 0 0 0 3px rgba(123,111,240,0.15) !important;
+    color: #e6edf3 !important;
+}
+
+.dark-input option {
+    background: #1c2128;
+    color: #e6edf3;
+}
+/* ── LOGS PAGE FIX ───────────────────────────────────────────── */
+.dark-card .card-body {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+}
+
+.dark-card {
+    overflow: visible !important;
+    height: auto !important;
+}
+
+.content-area {
+    overflow-y: auto !important;
+    height: auto !important;
+}
+
+.main-content {
+    overflow-y: auto !important;
+}
+
+body {
+    overflow-y: auto !important;
+}

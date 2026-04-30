@@ -17,104 +17,112 @@
 <div class="row g-3 mb-4">
 
     <div class="col-md-3">
-        <div class="stat-card">
-            <div class="stat-icon blue">
-                <i class="bi bi-journal-text"></i>
+        <a href="{{ url_for('logs') }}" style="text-decoration:none;">
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <i class="bi bi-journal-text"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ total_logs }}</h3>
+                    <p>Total Logs</p>
+                </div>
             </div>
-            <div class="stat-info">
-                <h3>{{ total_logs }}</h3>
-                <p>Total Logs</p>
-            </div>
-        </div>
+        </a>
     </div>
 
     <div class="col-md-3">
-        <div class="stat-card">
-            <div class="stat-icon red">
-                <i class="bi bi-x-circle-fill"></i>
+        <a href="{{ url_for('logs', event_type='failed_login') }}"
+           style="text-decoration:none;">
+            <div class="stat-card">
+                <div class="stat-icon red">
+                    <i class="bi bi-x-circle-fill"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ failed_count }}</h3>
+                    <p>Failed Logins</p>
+                </div>
             </div>
-            <div class="stat-info">
-                <h3>{{ failed_count }}</h3>
-                <p>Failed Logins</p>
-            </div>
-        </div>
+        </a>
     </div>
 
     <div class="col-md-3">
-        <div class="stat-card">
-            <div class="stat-icon green">
-                <i class="bi bi-check-circle-fill"></i>
+        <a href="{{ url_for('logs', event_type='successful_login') }}"
+           style="text-decoration:none;">
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ success_count }}</h3>
+                    <p>Successful Logins</p>
+                </div>
             </div>
-            <div class="stat-info">
-                <h3>{{ success_count }}</h3>
-                <p>Successful Logins</p>
-            </div>
-        </div>
+        </a>
     </div>
 
     <div class="col-md-3">
-        <div class="stat-card">
-            <div class="stat-icon yellow">
-                <i class="bi bi-exclamation-circle-fill"></i>
+        <a href="{{ url_for('logs', event_type='suspicious_activity') }}"
+           style="text-decoration:none;">
+            <div class="stat-card">
+                <div class="stat-icon yellow">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ suspicious_count }}</h3>
+                    <p>Suspicious Events</p>
+                </div>
             </div>
-            <div class="stat-info">
-                <h3>{{ suspicious_count }}</h3>
-                <p>Suspicious Events</p>
-            </div>
-        </div>
+        </a>
     </div>
 
 </div>
 
-<!-- ── FILTER BAR ─────────────────────────────────────────── -->
-<div class="dark-card mb-4">
-    <div class="card-header">
-        <span>
-            <i class="bi bi-funnel-fill text-info me-2"></i>
-            Search & Filter Logs
-        </span>
-        <!-- Insert test logs button -->
-        <a href="{{ url_for('insert_test_logs') }}"
-           class="btn btn-sm btn-purple">
-            <i class="bi bi-plus-circle me-1"></i>Insert Test Logs
-        </a>
-    </div>
-    <div class="card-body p-3">
-        <form method="GET" action="{{ url_for('logs') }}">
-            <div class="row g-3">
+<!-- ── SEARCH & FILTER BAR ────────────────────────────────── -->
+<div style="background:#161b22;
+            border:1px solid #30363d;
+            border-radius:14px;
+            margin-bottom:16px;">
 
-                <!-- Search box -->
-                <div class="col-md-5">
-                    <label class="form-label small text-muted">
-                        Search by IP or Message
+    <div style="background:#1c2128;
+                border-bottom:1px solid #30363d;
+                padding:14px 20px;
+                border-radius:14px 14px 0 0;
+                display:flex;
+                align-items:center;
+                font-weight:600;
+                font-size:14px;">
+        <i class="bi bi-funnel-fill text-info me-2"></i>
+        Search & Filter Logs
+    </div>
+
+    <div style="padding:16px 20px;">
+        <form method="GET" action="{{ url_for('logs') }}">
+            <div class="row g-3 align-items-end">
+
+                <div class="col-md-4">
+                    <label class="form-label small"
+                           style="color:#8b949e;">
+                        Search by IP Address or Message
                     </label>
-                    <div class="input-group">
-                        <span class="input-group-text"
-                              style="background:#1c2128;
-                                     border-color:#30363d;
-                                     color:#8b949e;">
-                            <i class="bi bi-search"></i>
-                        </span>
-                        <input type="text"
-                               name="search"
-                               value="{{ search }}"
-                               class="form-control"
-                               placeholder="e.g. 192.168.1.1 or failed login"
-                               style="background:#1c2128;
-                                      border-color:#30363d;
-                                      color:#e6edf3;">
-                    </div>
+                    <input type="text"
+                           name="search"
+                           value="{{ search }}"
+                           class="form-control"
+                           placeholder="e.g. 192.168.1.101"
+                           style="background:#1c2128;
+                                  border:1px solid #30363d;
+                                  color:#e6edf3;">
                 </div>
 
-                <!-- Event type dropdown -->
                 <div class="col-md-3">
-                    <label class="form-label small text-muted">
-                        Event Type
+                    <label class="form-label small"
+                           style="color:#8b949e;">
+                        Event Type (optional)
                     </label>
                     <select name="event_type"
                             class="form-select"
                             style="background:#1c2128;
-                                   border-color:#30363d;
+                                   border:1px solid #30363d;
                                    color:#e6edf3;">
                         <option value="">All Events</option>
                         {% for et in event_types %}
@@ -122,41 +130,40 @@
                                 {% if event_type == et['event_type'] %}
                                     selected
                                 {% endif %}>
-                                {{ et['event_type'] | replace('_', ' ') | title }}
+                                {{ et['event_type']|replace('_',' ')|title }}
                             </option>
                         {% endfor %}
                     </select>
                 </div>
 
-                <!-- Date filter -->
                 <div class="col-md-3">
-                    <label class="form-label small text-muted">
-                        From Date
+                    <label class="form-label small"
+                           style="color:#8b949e;">
+                        From Date (optional)
                     </label>
                     <input type="date"
                            name="date_from"
                            value="{{ date_from }}"
                            class="form-control"
                            style="background:#1c2128;
-                                  border-color:#30363d;
+                                  border:1px solid #30363d;
                                   color:#e6edf3;">
                 </div>
 
-                <!-- Buttons -->
-                <div class="col-md-1 d-flex align-items-end gap-2">
-                    <button type="submit" class="btn btn-purple w-100">
-                        <i class="bi bi-search"></i>
+                <div class="col-md-2">
+                    <button type="submit"
+                            class="btn btn-purple w-100">
+                        <i class="bi bi-search me-1"></i>Search
                     </button>
                 </div>
 
             </div>
 
-            <!-- Clear filters link -->
             {% if search or event_type or date_from %}
             <div class="mt-2">
                 <a href="{{ url_for('logs') }}"
-                   class="text-muted small">
-                    <i class="bi bi-x-circle me-1"></i>Clear filters
+                   style="color:#8b949e; font-size:13px;">
+                    <i class="bi bi-x-circle me-1"></i>Clear all filters
                 </a>
             </div>
             {% endif %}
@@ -165,111 +172,347 @@
     </div>
 </div>
 
+<!-- ── ACTION BUTTONS ─────────────────────────────────────── -->
+<div style="display:flex;
+            gap:10px;
+            margin-bottom:16px;
+            flex-wrap:wrap;
+            align-items:center;">
+
+    <!-- Upload Log File button -->
+    <button class="btn btn-purple btn-sm"
+            data-bs-toggle="modal"
+            data-bs-target="#uploadModal">
+        <i class="bi bi-upload me-1"></i>Upload Log File
+    </button>
+
+    <!-- Clear All Logs button -->
+    <form method="POST"
+          action="{{ url_for('delete_all_logs') }}"
+          onsubmit="return confirm(
+            'Delete ALL logs? This cannot be undone.')">
+        <button type="submit"
+                class="btn btn-sm"
+                style="background:rgba(248,81,73,0.1);
+                       color:#f85149;
+                       border:1px solid rgba(248,81,73,0.3);">
+            <i class="bi bi-trash-fill me-1"></i>Clear All Logs
+        </button>
+    </form>
+
+    <span style="margin-left:auto;
+                 color:#8b949e;
+                 font-size:13px;">
+        Showing {{ logs|length }} of {{ total_logs }} logs
+    </span>
+
+</div>
+
 <!-- ── LOGS TABLE ─────────────────────────────────────────── -->
-<div class="dark-card">
-    <div class="card-header">
+<div style="background:#161b22;
+            border:1px solid #30363d;
+            border-radius:14px;
+            margin-bottom:30px;">
+
+    <div style="background:#1c2128;
+                border-bottom:1px solid #30363d;
+                padding:14px 20px;
+                border-radius:14px 14px 0 0;
+                display:flex;
+                align-items:center;
+                justify-content:space-between;
+                font-weight:600;
+                font-size:14px;">
         <span>
             <i class="bi bi-table text-info me-2"></i>
             Log Entries
-            <span style="color:#8b949e; font-size:12px; margin-left:8px;">
-                ({{ logs|length }} results)
-            </span>
+        </span>
+        <span style="color:#8b949e; font-size:12px; font-weight:400;">
+            {{ logs|length }} result{{ 's' if logs|length != 1 }}
         </span>
     </div>
-    <div class="card-body">
-        {% if logs %}
-        <div class="table-responsive">
-            <table class="table table-dark table-hover">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>IP Address</th>
-                        <th>Event Type</th>
-                        <th>Message</th>
-                        <th>Source</th>
-                        <th>Timestamp</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for log in logs %}
-                    <tr class="log-row-{{ log['event_type'] }}">
 
-                        <!-- ID -->
-                        <td style="color:#484f58">{{ log['id'] }}</td>
+    {% if logs %}
+    <div style="overflow-x:auto;">
+        <table style="width:100%;
+                      border-collapse:collapse;
+                      font-size:13px;">
+            <thead>
+                <tr style="border-bottom:1px solid #30363d;">
+                    <th style="padding:12px 16px;
+                               color:#8b949e;
+                               font-weight:600;
+                               text-align:left;">#</th>
+                    <th style="padding:12px 16px;
+                               color:#8b949e;
+                               font-weight:600;
+                               text-align:left;">IP Address</th>
+                    <th style="padding:12px 16px;
+                               color:#8b949e;
+                               font-weight:600;
+                               text-align:left;">Event Type</th>
+                    <th style="padding:12px 16px;
+                               color:#8b949e;
+                               font-weight:600;
+                               text-align:left;">Message</th>
+                    <th style="padding:12px 16px;
+                               color:#8b949e;
+                               font-weight:600;
+                               text-align:left;">Source</th>
+                    <th style="padding:12px 16px;
+                               color:#8b949e;
+                               font-weight:600;
+                               text-align:left;">Timestamp</th>
+                    <th style="padding:12px 16px;
+                               color:#8b949e;
+                               font-weight:600;
+                               text-align:left;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr style="border-bottom:1px solid #21262d;
+                           {% if log['event_type'] == 'failed_login' %}
+                               border-left:3px solid rgba(248,81,73,0.5);
+                           {% elif log['event_type'] == 'successful_login' %}
+                               border-left:3px solid rgba(63,185,80,0.5);
+                           {% elif log['event_type'] == 'suspicious_activity' %}
+                               border-left:3px solid rgba(210,153,34,0.5);
+                           {% endif %}">
 
-                        <!-- IP Address -->
-                        <td>
-                            <code style="color:#58a6ff">
+                    <!-- ID -->
+                    <td style="padding:12px 16px; color:#484f58;">
+                        {{ log['id'] }}
+                    </td>
+
+                    <!-- IP Address -->
+                    <td style="padding:12px 16px;">
+                        <a href="{{ url_for('logs', search=log['ip_address']) }}"
+                           style="text-decoration:none;"
+                           title="Click to filter by this IP">
+                            <code style="color:#58a6ff;">
                                 {{ log['ip_address'] }}
                             </code>
-                        </td>
+                        </a>
+                    </td>
 
-                        <!-- Event Type Badge -->
-                        <td>
-                            {% if log['event_type'] == 'failed_login' %}
-                                <span class="event-badge event-failed">
-                                    <i class="bi bi-x-circle-fill me-1"></i>
-                                    Failed Login
-                                </span>
-                            {% elif log['event_type'] == 'successful_login' %}
-                                <span class="event-badge event-success">
-                                    <i class="bi bi-check-circle-fill me-1"></i>
-                                    Successful Login
-                                </span>
-                            {% elif log['event_type'] == 'suspicious_activity' %}
-                                <span class="event-badge event-suspicious">
-                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                                    Suspicious Activity
-                                </span>
-                            {% else %}
-                                <span class="event-badge event-info">
-                                    <i class="bi bi-info-circle-fill me-1"></i>
-                                    {{ log['event_type'] | replace('_',' ') | title }}
-                                </span>
-                            {% endif %}
-                        </td>
-
-                        <!-- Message -->
-                        <td style="color:#8b949e">{{ log['message'] }}</td>
-
-                        <!-- Source -->
-                        <td>
-                            <span style="background:rgba(88,166,255,0.1);
-                                         color:#58a6ff;
-                                         padding:2px 8px;
-                                         border-radius:4px;
-                                         font-size:11px;">
-                                {{ log['source'] or 'system' }}
+                    <!-- Event Type Badge -->
+                    <td style="padding:12px 16px;">
+                        {% if log['event_type'] == 'failed_login' %}
+                            <span style="background:rgba(248,81,73,0.12);
+                                         color:#f85149;
+                                         border:1px solid rgba(248,81,73,0.25);
+                                         padding:3px 10px;
+                                         border-radius:6px;
+                                         font-size:11px;
+                                         font-weight:600;">
+                                <i class="bi bi-x-circle-fill me-1"></i>
+                                Failed Login
                             </span>
-                        </td>
+                        {% elif log['event_type'] == 'successful_login' %}
+                            <span style="background:rgba(63,185,80,0.12);
+                                         color:#3fb950;
+                                         border:1px solid rgba(63,185,80,0.25);
+                                         padding:3px 10px;
+                                         border-radius:6px;
+                                         font-size:11px;
+                                         font-weight:600;">
+                                <i class="bi bi-check-circle-fill me-1"></i>
+                                Successful Login
+                            </span>
+                        {% elif log['event_type'] == 'suspicious_activity' %}
+                            <span style="background:rgba(210,153,34,0.12);
+                                         color:#d29922;
+                                         border:1px solid rgba(210,153,34,0.25);
+                                         padding:3px 10px;
+                                         border-radius:6px;
+                                         font-size:11px;
+                                         font-weight:600;">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                Suspicious
+                            </span>
+                        {% else %}
+                            <span style="background:rgba(88,166,255,0.12);
+                                         color:#58a6ff;
+                                         border:1px solid rgba(88,166,255,0.25);
+                                         padding:3px 10px;
+                                         border-radius:6px;
+                                         font-size:11px;
+                                         font-weight:600;">
+                                <i class="bi bi-info-circle-fill me-1"></i>
+                                {{ log['event_type']|replace('_',' ')|title }}
+                            </span>
+                        {% endif %}
+                    </td>
 
-                        <!-- Timestamp -->
-                        <td style="color:#8b949e; font-size:12px">
-                            {{ log['timestamp'] }}
-                        </td>
+                    <!-- Message -->
+                    <td style="padding:12px 16px; color:#8b949e;">
+                        {{ log['message'] or '—' }}
+                    </td>
 
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                    <!-- Source -->
+                    <td style="padding:12px 16px;">
+                        <span style="background:rgba(88,166,255,0.1);
+                                     color:#58a6ff;
+                                     padding:2px 8px;
+                                     border-radius:4px;
+                                     font-size:11px;">
+                            {{ log['source'] or 'system' }}
+                        </span>
+                    </td>
+
+                    <!-- Timestamp -->
+                    <td style="padding:12px 16px;
+                               color:#8b949e;
+                               font-size:12px;">
+                        {{ log['timestamp'] }}
+                    </td>
+
+                    <!-- Delete button -->
+                    <td style="padding:12px 16px;">
+                        <form method="POST"
+                              action="{{ url_for('delete_log',
+                                                 log_id=log['id']) }}"
+                              onsubmit="return confirm(
+                                'Delete this log entry?')">
+                            <button type="submit"
+                                    title="Delete"
+                                    style="background:rgba(248,81,73,0.1);
+                                           color:#f85149;
+                                           border:1px solid rgba(248,81,73,0.3);
+                                           border-radius:6px;
+                                           padding:4px 10px;
+                                           cursor:pointer;
+                                           font-size:13px;">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% else %}
+    <!-- Empty state -->
+    <div style="text-align:center; padding:50px 20px;">
+        <i class="bi bi-inbox"
+           style="font-size:40px;
+                  color:#484f58;
+                  display:block;
+                  margin-bottom:12px;"></i>
+        {% if search or event_type or date_from %}
+            <p style="color:#8b949e;">
+                No logs match your search — try different filters
+            </p>
+            <a href="{{ url_for('logs') }}"
+               class="btn btn-sm btn-purple mt-2">
+                <i class="bi bi-x-circle me-1"></i>Clear Filters
+            </a>
         {% else %}
-        <div class="empty-state">
-            <i class="bi bi-inbox"></i>
-            <p>No logs found matching your filters</p>
-            {% if search or event_type or date_from %}
-                <a href="{{ url_for('logs') }}"
-                   class="btn btn-sm btn-purple mt-3">
-                    Clear Filters
-                </a>
-            {% else %}
-                <a href="{{ url_for('insert_test_logs') }}"
-                   class="btn btn-sm btn-purple mt-3">
-                    Insert Test Logs
-                </a>
-            {% endif %}
-        </div>
+            <p style="color:#8b949e;">
+                No logs yet — upload a log file to get started
+            </p>
+            <button class="btn btn-sm btn-purple mt-2"
+                    data-bs-toggle="modal"
+                    data-bs-target="#uploadModal">
+                <i class="bi bi-upload me-1"></i>Upload Log File
+            </button>
         {% endif %}
+    </div>
+    {% endif %}
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     UPLOAD MODAL
+════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="uploadModal" tabindex="-1"
+     aria-labelledby="uploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content"
+             style="background:#161b22;
+                    border:1px solid #30363d;
+                    color:#e6edf3;">
+
+            <div class="modal-header"
+                 style="border-color:#30363d;">
+                <h5 class="modal-title" id="uploadModalLabel">
+                    <i class="bi bi-upload me-2 text-info"></i>
+                    Upload Log File
+                </h5>
+                <button type="button"
+                        class="btn-close btn-close-white"
+                        data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <div style="background:rgba(88,166,255,0.1);
+                            border:1px solid rgba(88,166,255,0.2);
+                            color:#58a6ff;
+                            padding:12px;
+                            border-radius:8px;
+                            font-size:13px;
+                            margin-bottom:16px;">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Run <code>generate_test_logs.py</code> on your PC
+                    to create a <strong>test_logs.json</strong> file,
+                    then upload it here.
+                </div>
+
+                <p style="color:#8b949e; font-size:12px; margin-bottom:6px;">
+                    Expected JSON format:
+                </p>
+                <pre style="background:#0d1117;
+                            border:1px solid #30363d;
+                            border-radius:8px;
+                            padding:12px;
+                            font-size:11px;
+                            color:#8b949e;
+                            overflow-x:auto;">[
+  {
+    "ip_address": "192.168.1.1",
+    "event_type": "failed_login",
+    "message":    "Failed login attempt",
+    "source":     "web_app"
+  }
+]</pre>
+
+                <form method="POST"
+                      action="{{ url_for('upload_logs') }}"
+                      enctype="multipart/form-data"
+                      style="margin-top:16px;">
+
+                    <div style="margin-bottom:16px;">
+                        <label style="color:#8b949e;
+                                      font-size:13px;
+                                      display:block;
+                                      margin-bottom:6px;">
+                            Select .json file from your PC
+                        </label>
+                        <input type="file"
+                               name="logfile"
+                               accept=".json"
+                               class="form-control"
+                               style="background:#1c2128;
+                                      border:1px solid #30363d;
+                                      color:#e6edf3;"
+                               required>
+                    </div>
+
+                    <button type="submit"
+                            class="btn btn-purple w-100">
+                        <i class="bi bi-upload me-2"></i>
+                        Upload & Import Logs
+                    </button>
+
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 

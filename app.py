@@ -4,6 +4,7 @@ from database import init_db, get_db
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 import functools
+import json
 
 # ── CREATE FLASK APP ─────────────────────────────────────────────
 app = Flask(__name__)
@@ -225,43 +226,51 @@ def logs():
     db = get_db()
 
     # ── Get filter values from URL ───────────────────────────────
+    # All filters are completely optional
+    # User can search by IP alone without filling other fields
     search     = request.args.get('search', '').strip()
     event_type = request.args.get('event_type', '').strip()
     date_from  = request.args.get('date_from', '').strip()
 
-    # ── Build dynamic query based on filters ─────────────────────
+    # ── Build dynamic query — only apply filters that are filled──
     query  = 'SELECT * FROM logs WHERE 1=1'
     params = []
 
+    # If user types just an IP address, it will match perfectly
     if search:
-        query += ' AND (ip_address LIKE ? OR message LIKE ?)'
-        params.extend([f'%{search}%', f'%{search}%'])
+        query += '''
+            AND (ip_address LIKE ?
+            OR   message    LIKE ?
+            OR   source     LIKE ?)
+        '''
+        params.extend([f'%{search}%', f'%{search}%', f'%{search}%'])
 
+    # Only filter by event type if user selected one
     if event_type:
         query += ' AND event_type = ?'
         params.append(event_type)
 
+    # Only filter by date if user picked one
     if date_from:
         query += ' AND date(timestamp) >= ?'
         params.append(date_from)
 
     query += ' ORDER BY timestamp DESC'
 
-    # ── Fetch filtered logs ──────────────────────────────────────
     all_logs = db.execute(query, params).fetchall()
 
     # ── Stat counts ──────────────────────────────────────────────
     total_logs = db.execute(
         'SELECT COUNT(*) FROM logs').fetchone()[0]
     failed_count = db.execute(
-        'SELECT COUNT(*) FROM logs WHERE event_type = "failed_login"'
-    ).fetchone()[0]
+        'SELECT COUNT(*) FROM logs '
+        'WHERE event_type = "failed_login"').fetchone()[0]
     success_count = db.execute(
-        'SELECT COUNT(*) FROM logs WHERE event_type = "successful_login"'
-    ).fetchone()[0]
+        'SELECT COUNT(*) FROM logs '
+        'WHERE event_type = "successful_login"').fetchone()[0]
     suspicious_count = db.execute(
-        'SELECT COUNT(*) FROM logs WHERE event_type = "suspicious_activity"'
-    ).fetchone()[0]
+        'SELECT COUNT(*) FROM logs '
+        'WHERE event_type = "suspicious_activity"').fetchone()[0]
 
     # ── Unique event types for dropdown ──────────────────────────
     event_types = db.execute(
@@ -286,6 +295,92 @@ def logs():
                            search=search,
                            event_type=event_type,
                            date_from=date_from)
+
+
+# ── UPLOAD LOG FILE ──────────────────────────────────────────────
+@app.route('/upload-logs', methods=['POST'])
+@login_required
+def upload_logs():
+    """Accept a JSON log file uploaded from the user's PC."""
+    if 'logfile' not in request.files:
+        flash('No file selected.', 'danger')
+        return redirect(url_for('logs'))
+
+    file = request.files['logfile']
+
+    if file.filename == '':
+        flash('No file selected.', 'danger')
+        return redirect(url_for('logs'))
+
+    if not file.filename.endswith('.json'):
+        flash('Please upload a .json file only.', 'danger')
+        return redirect(url_for('logs'))
+
+    try:
+        data = json.load(file)
+
+        if not isinstance(data, list):
+            flash('JSON file must contain a list of log entries.', 'danger')
+            return redirect(url_for('logs'))
+
+        db     = get_db()
+        count  = 0
+        errors = 0
+
+        for entry in data:
+            try:
+                db.execute('''
+                    INSERT INTO logs (ip_address, event_type, message, source)
+                    VALUES (?, ?, ?, ?)
+                ''', (
+                    entry.get('ip_address', '0.0.0.0'),
+                    entry.get('event_type', 'unknown'),
+                    entry.get('message',    ''),
+                    entry.get('source',     'uploaded'),
+                ))
+                count += 1
+            except Exception:
+                errors += 1
+
+        db.commit()
+        db.close()
+
+        if errors:
+            flash(f'✅ {count} logs imported. ⚠️ {errors} entries skipped.',
+                  'warning')
+        else:
+            flash(f'✅ {count} logs imported successfully!', 'success')
+
+    except Exception as e:
+        flash(f'❌ Error reading file: {str(e)}', 'danger')
+
+    return redirect(url_for('logs'))
+
+
+# ── DELETE SINGLE LOG ────────────────────────────────────────────
+@app.route('/delete-log/<int:log_id>', methods=['POST'])
+@login_required
+def delete_log(log_id):
+    """Delete a single log entry by ID."""
+    db = get_db()
+    db.execute('DELETE FROM logs WHERE id = ?', (log_id,))
+    db.commit()
+    db.close()
+    flash('🗑️ Log entry deleted.', 'success')
+    return redirect(url_for('logs'))
+
+
+# ── DELETE ALL LOGS ──────────────────────────────────────────────
+@app.route('/delete-all-logs', methods=['POST'])
+@login_required
+def delete_all_logs():
+    """Delete every log entry from the database."""
+    db = get_db()
+    db.execute('DELETE FROM logs')
+    db.commit()
+    db.close()
+    flash('🗑️ All logs have been cleared.', 'success')
+    return redirect(url_for('logs'))
 
 # ═══════════════════════════════════════════════════════════════
 #  BLOCKED IPs
@@ -319,46 +414,6 @@ def live_monitor():
     db.close()
     return render_template('live_monitor.html',
                            alert_count=alert_count)
-
-# ═══════════════════════════════════════════════════════════════
-#  TEST DATA — Insert sample logs for testing
-# ═══════════════════════════════════════════════════════════════
-
-@app.route('/insert-test-logs')
-@login_required
-def insert_test_logs():
-    """Insert sample logs into the database for testing."""
-    db = get_db()
-
-    test_logs = [
-        ('192.168.1.101', 'failed_login',       'Failed login attempt',           'web_app'),
-        ('192.168.1.101', 'failed_login',       'Failed login attempt',           'web_app'),
-        ('192.168.1.101', 'failed_login',       'Failed login attempt',           'web_app'),
-        ('192.168.1.101', 'failed_login',       'Failed login attempt',           'web_app'),
-        ('192.168.1.101', 'failed_login',       'Failed login attempt',           'web_app'),
-        ('192.168.1.101', 'failed_login',       'Failed login attempt',           'web_app'),
-        ('10.0.0.55',     'successful_login',   'User logged in successfully',    'web_app'),
-        ('10.0.0.55',     'successful_login',   'User logged in successfully',    'web_app'),
-        ('172.16.0.23',   'suspicious_activity','Multiple requests from same IP', 'web_app'),
-        ('192.168.1.200', 'failed_login',       'Failed login attempt',           'web_app'),
-        ('192.168.1.200', 'failed_login',       'Failed login attempt',           'web_app'),
-        ('10.0.0.100',    'successful_login',   'User logged in successfully',    'web_app'),
-        ('172.16.0.50',   'suspicious_activity','Unusual traffic pattern',        'web_app'),
-        ('192.168.1.105', 'failed_login',       'Failed login attempt',           'web_app'),
-        ('10.0.0.77',     'successful_login',   'User logged in successfully',    'web_app'),
-    ]
-
-    for ip, event, message, source in test_logs:
-        db.execute('''
-            INSERT INTO logs (ip_address, event_type, message, source)
-            VALUES (?, ?, ?, ?)
-        ''', (ip, event, message, source))
-
-    db.commit()
-    db.close()
-
-    flash('✅ 15 test logs inserted successfully!', 'success')
-    return redirect(url_for('logs'))
 
 # ═══════════════════════════════════════════════════════════════
 #  RUN APP
