@@ -221,16 +221,71 @@ def alerts():
 @app.route('/logs')
 @login_required
 def logs():
-    """Logs page."""
+    """Logs page with search and filter support."""
     db = get_db()
-    all_logs    = db.execute(
-        'SELECT * FROM logs ORDER BY timestamp DESC').fetchall()
+
+    # ── Get filter values from URL ───────────────────────────────
+    search     = request.args.get('search', '').strip()
+    event_type = request.args.get('event_type', '').strip()
+    date_from  = request.args.get('date_from', '').strip()
+
+    # ── Build dynamic query based on filters ─────────────────────
+    query  = 'SELECT * FROM logs WHERE 1=1'
+    params = []
+
+    if search:
+        query += ' AND (ip_address LIKE ? OR message LIKE ?)'
+        params.extend([f'%{search}%', f'%{search}%'])
+
+    if event_type:
+        query += ' AND event_type = ?'
+        params.append(event_type)
+
+    if date_from:
+        query += ' AND date(timestamp) >= ?'
+        params.append(date_from)
+
+    query += ' ORDER BY timestamp DESC'
+
+    # ── Fetch filtered logs ──────────────────────────────────────
+    all_logs = db.execute(query, params).fetchall()
+
+    # ── Stat counts ──────────────────────────────────────────────
+    total_logs = db.execute(
+        'SELECT COUNT(*) FROM logs').fetchone()[0]
+    failed_count = db.execute(
+        'SELECT COUNT(*) FROM logs WHERE event_type = "failed_login"'
+    ).fetchone()[0]
+    success_count = db.execute(
+        'SELECT COUNT(*) FROM logs WHERE event_type = "successful_login"'
+    ).fetchone()[0]
+    suspicious_count = db.execute(
+        'SELECT COUNT(*) FROM logs WHERE event_type = "suspicious_activity"'
+    ).fetchone()[0]
+
+    # ── Unique event types for dropdown ──────────────────────────
+    event_types = db.execute(
+        'SELECT DISTINCT event_type FROM logs ORDER BY event_type'
+    ).fetchall()
+
+    # ── Alert badge count for sidebar ───────────────────────────
     alert_count = db.execute(
-        'SELECT COUNT(*) FROM alerts WHERE status = "open"').fetchone()[0]
+        'SELECT COUNT(*) FROM alerts WHERE status = "open"'
+    ).fetchone()[0]
+
     db.close()
+
     return render_template('logs.html',
                            logs=all_logs,
-                           alert_count=alert_count)
+                           total_logs=total_logs,
+                           failed_count=failed_count,
+                           success_count=success_count,
+                           suspicious_count=suspicious_count,
+                           event_types=event_types,
+                           alert_count=alert_count,
+                           search=search,
+                           event_type=event_type,
+                           date_from=date_from)
 
 # ═══════════════════════════════════════════════════════════════
 #  BLOCKED IPs
@@ -264,6 +319,46 @@ def live_monitor():
     db.close()
     return render_template('live_monitor.html',
                            alert_count=alert_count)
+
+# ═══════════════════════════════════════════════════════════════
+#  TEST DATA — Insert sample logs for testing
+# ═══════════════════════════════════════════════════════════════
+
+@app.route('/insert-test-logs')
+@login_required
+def insert_test_logs():
+    """Insert sample logs into the database for testing."""
+    db = get_db()
+
+    test_logs = [
+        ('192.168.1.101', 'failed_login',       'Failed login attempt',           'web_app'),
+        ('192.168.1.101', 'failed_login',       'Failed login attempt',           'web_app'),
+        ('192.168.1.101', 'failed_login',       'Failed login attempt',           'web_app'),
+        ('192.168.1.101', 'failed_login',       'Failed login attempt',           'web_app'),
+        ('192.168.1.101', 'failed_login',       'Failed login attempt',           'web_app'),
+        ('192.168.1.101', 'failed_login',       'Failed login attempt',           'web_app'),
+        ('10.0.0.55',     'successful_login',   'User logged in successfully',    'web_app'),
+        ('10.0.0.55',     'successful_login',   'User logged in successfully',    'web_app'),
+        ('172.16.0.23',   'suspicious_activity','Multiple requests from same IP', 'web_app'),
+        ('192.168.1.200', 'failed_login',       'Failed login attempt',           'web_app'),
+        ('192.168.1.200', 'failed_login',       'Failed login attempt',           'web_app'),
+        ('10.0.0.100',    'successful_login',   'User logged in successfully',    'web_app'),
+        ('172.16.0.50',   'suspicious_activity','Unusual traffic pattern',        'web_app'),
+        ('192.168.1.105', 'failed_login',       'Failed login attempt',           'web_app'),
+        ('10.0.0.77',     'successful_login',   'User logged in successfully',    'web_app'),
+    ]
+
+    for ip, event, message, source in test_logs:
+        db.execute('''
+            INSERT INTO logs (ip_address, event_type, message, source)
+            VALUES (?, ?, ?, ?)
+        ''', (ip, event, message, source))
+
+    db.commit()
+    db.close()
+
+    flash('✅ 15 test logs inserted successfully!', 'success')
+    return redirect(url_for('logs'))
 
 # ═══════════════════════════════════════════════════════════════
 #  RUN APP
