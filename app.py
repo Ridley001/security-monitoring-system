@@ -1,16 +1,15 @@
 from flask import (Flask, render_template, redirect,
-                   url_for, session, request, flash)
+                   url_for, session, request, flash, jsonify)
 from database import init_db, get_db
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
+from detection import run_detection
 import functools
 import json
 
 # ── CREATE FLASK APP ─────────────────────────────────────────────
 app = Flask(__name__)
 app.secret_key = 'security_system_secret_key_2024'
-
-# Session lifetime — auto logout after 30 minutes of inactivity
 app.permanent_session_lifetime = timedelta(minutes=30)
 
 # ── INITIALIZE DATABASE ──────────────────────────────────────────
@@ -31,7 +30,6 @@ def login_required(f):
     return decorated_function
 
 def log_login_attempt(ip_address, username, success):
-    """Save every login attempt to the database."""
     db = get_db()
     db.execute('''
         INSERT INTO login_attempts (ip_address, username, success)
@@ -41,7 +39,6 @@ def log_login_attempt(ip_address, username, success):
     db.close()
 
 def is_brute_force(ip_address):
-    """Check if an IP has failed more than 5 times in the last 60 seconds."""
     db = get_db()
     result = db.execute('''
         SELECT COUNT(*) FROM login_attempts
@@ -191,6 +188,54 @@ def alerts():
                            alerts=all_alerts,
                            alert_count=alert_count)
 
+
+# ── RESOLVE ALERT ────────────────────────────────────────────────
+@app.route('/resolve-alert/<int:alert_id>', methods=['POST'])
+@login_required
+def resolve_alert(alert_id):
+    """Mark an alert as resolved."""
+    db = get_db()
+    db.execute('''
+        UPDATE alerts SET status = 'resolved'
+        WHERE id = ?
+    ''', (alert_id,))
+    db.commit()
+    db.close()
+    flash('✅ Alert marked as resolved.', 'success')
+    return redirect(url_for('alerts'))
+
+
+# ── API: GET LATEST ALERT COUNT (for real-time notification) ─────
+@app.route('/api/alert-count')
+@login_required
+def api_alert_count():
+    """
+    Returns the current open alert count as JSON.
+    Called every 10 seconds by the browser to check for new alerts.
+    """
+    db = get_db()
+    count = db.execute(
+        'SELECT COUNT(*) FROM alerts WHERE status = "open"'
+    ).fetchone()[0]
+
+    # Get the most recent open alert for the popup message
+    latest = db.execute('''
+        SELECT alert_type, ip_address, severity
+        FROM alerts
+        WHERE status = 'open'
+        ORDER BY timestamp DESC
+        LIMIT 1
+    ''').fetchone()
+
+    db.close()
+
+    return jsonify({
+        'count':      count,
+        'alert_type': latest['alert_type'] if latest else None,
+        'ip_address': latest['ip_address'] if latest else None,
+        'severity':   latest['severity']   if latest else None,
+    })
+
 # ═══════════════════════════════════════════════════════════════
 #  LOGS
 # ═══════════════════════════════════════════════════════════════
@@ -227,12 +272,12 @@ def logs():
 
     all_logs = db.execute(query, params).fetchall()
 
-    total_logs = db.execute(
+    total_logs       = db.execute(
         'SELECT COUNT(*) FROM logs').fetchone()[0]
-    failed_count = db.execute(
+    failed_count     = db.execute(
         'SELECT COUNT(*) FROM logs '
         'WHERE event_type = "failed_login"').fetchone()[0]
-    success_count = db.execute(
+    success_count    = db.execute(
         'SELECT COUNT(*) FROM logs '
         'WHERE event_type = "successful_login"').fetchone()[0]
     suspicious_count = db.execute(
@@ -247,8 +292,6 @@ def logs():
         'SELECT COUNT(*) FROM alerts WHERE status = "open"'
     ).fetchone()[0]
 
-    # ── Get all currently blocked IPs ────────────────────────────
-    # Used to show "Already Blocked" label on blocked IPs in table
     blocked_ip_list = [
         row['ip_address'] for row in
         db.execute('SELECT ip_address FROM blocked_ips').fetchall()
@@ -301,16 +344,23 @@ def upload_logs():
 
         for entry in data:
             try:
+                ip    = entry.get('ip_address', '0.0.0.0')
+                event = entry.get('event_type', 'unknown')
+
                 db.execute('''
                     INSERT INTO logs (ip_address, event_type, message, source)
                     VALUES (?, ?, ?, ?)
                 ''', (
-                    entry.get('ip_address', '0.0.0.0'),
-                    entry.get('event_type', 'unknown'),
-                    entry.get('message',    ''),
-                    entry.get('source',     'uploaded'),
+                    ip,
+                    event,
+                    entry.get('message', ''),
+                    entry.get('source',  'uploaded'),
                 ))
                 count += 1
+
+                # ── Run detection engine on every log ────────────
+                run_detection(ip, event)
+
             except Exception:
                 errors += 1
 
@@ -318,10 +368,13 @@ def upload_logs():
         db.close()
 
         if errors:
-            flash(f'✅ {count} logs imported. ⚠️ {errors} entries skipped.',
-                  'warning')
+            flash(
+                f'✅ {count} logs imported. ⚠️ {errors} entries skipped.',
+                'warning')
         else:
-            flash(f'✅ {count} logs imported successfully!', 'success')
+            flash(
+                f'✅ {count} logs imported! Detection engine has analyzed '
+                f'all entries.', 'success')
 
     except Exception as e:
         flash(f'❌ Error reading file: {str(e)}', 'danger')
@@ -357,9 +410,9 @@ def delete_all_logs():
 @app.route('/block-ip-from-log', methods=['POST'])
 @login_required
 def block_ip_from_log():
-    """Block an IP address directly from the logs page."""
     ip_address = request.form.get('ip_address', '').strip()
-    reason     = request.form.get('reason', 'Blocked from logs page').strip()
+    reason     = request.form.get('reason',
+                                  'Blocked from logs page').strip()
 
     if not ip_address:
         flash('No IP address provided.', 'danger')
@@ -367,7 +420,6 @@ def block_ip_from_log():
 
     db = get_db()
 
-    # Check if already blocked
     already = db.execute(
         'SELECT id FROM blocked_ips WHERE ip_address = ?',
         (ip_address,)
@@ -408,7 +460,6 @@ def blocked():
 @app.route('/unblock-ip/<int:ip_id>', methods=['POST'])
 @login_required
 def unblock_ip(ip_id):
-    """Remove an IP from the blocked list."""
     db = get_db()
     ip_row = db.execute(
         'SELECT ip_address FROM blocked_ips WHERE id = ?',

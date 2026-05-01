@@ -1,52 +1,238 @@
 {% extends "base.html" %}
 {% block title %}Alerts{% endblock %}
+
 {% block page_title %}
-    <i class="bi bi-exclamation-triangle-fill me-2"></i>Alerts
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>Security Alerts
 {% endblock %}
+
 {% block content %}
+
 <div class="page-heading">
     <h4>Security Alerts</h4>
-    <p>All detected threats and incidents</p>
+    <p>Threats automatically detected by the detection engine</p>
 </div>
-<div class="dark-card">
-    <div class="card-header">
-        <span><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>
-        All Alerts</span>
+
+<!-- ── STAT CARDS ─────────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon red">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ alerts|selectattr('status','equalto','open')|list|length }}</h3>
+                <p>Open Alerts</p>
+            </div>
+        </div>
     </div>
-    <div class="card-body">
-        {% if alerts %}
-        <table class="table table-dark table-hover">
+
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon green">
+                <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ alerts|selectattr('status','equalto','resolved')|list|length }}</h3>
+                <p>Resolved Alerts</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon blue">
+                <i class="bi bi-shield-fill"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ alerts|length }}</h3>
+                <p>Total Alerts</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ── ALERTS TABLE ───────────────────────────────────────── -->
+<div style="background:#161b22;
+            border:1px solid #30363d;
+            border-radius:14px;
+            margin-bottom:30px;">
+
+    <div style="background:#1c2128;
+                border-bottom:1px solid #30363d;
+                padding:14px 20px;
+                border-radius:14px 14px 0 0;
+                display:flex;
+                align-items:center;
+                justify-content:space-between;
+                font-weight:600;
+                font-size:14px;">
+        <span>
+            <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>
+            All Alerts
+        </span>
+        <span style="color:#8b949e; font-size:12px; font-weight:400;">
+            {{ alerts|length }} total
+        </span>
+    </div>
+
+    {% if alerts %}
+    <div style="overflow-x:auto;">
+        <table style="width:100%;
+                      border-collapse:collapse;
+                      font-size:13px;">
             <thead>
-                <tr>
-                    <th>IP Address</th>
-                    <th>Type</th>
-                    <th>Description</th>
-                    <th>Severity</th>
-                    <th>Status</th>
-                    <th>Time</th>
+                <tr style="border-bottom:1px solid #30363d;">
+                    <th style="padding:12px 16px; color:#8b949e;
+                               font-weight:600; text-align:left;">#</th>
+                    <th style="padding:12px 16px; color:#8b949e;
+                               font-weight:600; text-align:left;">IP Address</th>
+                    <th style="padding:12px 16px; color:#8b949e;
+                               font-weight:600; text-align:left;">Alert Type</th>
+                    <th style="padding:12px 16px; color:#8b949e;
+                               font-weight:600; text-align:left;">Description</th>
+                    <th style="padding:12px 16px; color:#8b949e;
+                               font-weight:600; text-align:left;">Severity</th>
+                    <th style="padding:12px 16px; color:#8b949e;
+                               font-weight:600; text-align:left;">Status</th>
+                    <th style="padding:12px 16px; color:#8b949e;
+                               font-weight:600; text-align:left;">Time</th>
+                    <th style="padding:12px 16px; color:#8b949e;
+                               font-weight:600; text-align:left;">Action</th>
                 </tr>
             </thead>
             <tbody>
                 {% for alert in alerts %}
-                <tr class="alert-row-{{ alert['severity'] }}">
-                    <td><code style="color:#58a6ff">{{ alert['ip_address'] }}</code></td>
-                    <td>{{ alert['alert_type'] }}</td>
-                    <td>{{ alert['description'] }}</td>
-                    <td><span class="badge-{{ alert['severity'] }}">
-                        {{ alert['severity']|capitalize }}</span></td>
-                    <td><span class="badge-{{ alert['status'] }}">
-                        {{ alert['status']|capitalize }}</span></td>
-                    <td style="color:#8b949e;font-size:12px">{{ alert['timestamp'] }}</td>
+                {% set alert_ip = alert['ip_address'] %}
+
+                <tr style="border-bottom:1px solid #21262d;
+                           {% if alert['severity'] == 'high' %}
+                               border-left:3px solid rgba(248,81,73,0.6);
+                           {% elif alert['severity'] == 'medium' %}
+                               border-left:3px solid rgba(210,153,34,0.6);
+                           {% else %}
+                               border-left:3px solid rgba(63,185,80,0.6);
+                           {% endif %}">
+
+                    <td style="padding:12px 16px; color:#484f58;">
+                        {{ alert['id'] }}
+                    </td>
+
+                    <td style="padding:12px 16px;">
+                        <code style="color:#58a6ff;">{{ alert_ip }}</code>
+                    </td>
+
+                    <td style="padding:12px 16px; color:#e6edf3;
+                               font-weight:600;">
+                        {{ alert['alert_type'] }}
+                    </td>
+
+                    <td style="padding:12px 16px; color:#8b949e;
+                               max-width:300px;">
+                        {{ alert['description'] }}
+                    </td>
+
+                    <!-- Severity badge -->
+                    <td style="padding:12px 16px;">
+                        {% if alert['severity'] == 'high' %}
+                            <span style="background:rgba(248,81,73,0.12);
+                                         color:#f85149;
+                                         border:1px solid rgba(248,81,73,0.25);
+                                         padding:3px 10px; border-radius:6px;
+                                         font-size:11px; font-weight:600;">
+                                🔴 High
+                            </span>
+                        {% elif alert['severity'] == 'medium' %}
+                            <span style="background:rgba(210,153,34,0.12);
+                                         color:#d29922;
+                                         border:1px solid rgba(210,153,34,0.25);
+                                         padding:3px 10px; border-radius:6px;
+                                         font-size:11px; font-weight:600;">
+                                🟡 Medium
+                            </span>
+                        {% else %}
+                            <span style="background:rgba(63,185,80,0.12);
+                                         color:#3fb950;
+                                         border:1px solid rgba(63,185,80,0.25);
+                                         padding:3px 10px; border-radius:6px;
+                                         font-size:11px; font-weight:600;">
+                                🟢 Low
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Status badge -->
+                    <td style="padding:12px 16px;">
+                        {% if alert['status'] == 'open' %}
+                            <span style="background:rgba(248,81,73,0.12);
+                                         color:#f85149;
+                                         border:1px solid rgba(248,81,73,0.25);
+                                         padding:3px 10px; border-radius:6px;
+                                         font-size:11px;">
+                                ● Open
+                            </span>
+                        {% else %}
+                            <span style="background:rgba(63,185,80,0.12);
+                                         color:#3fb950;
+                                         border:1px solid rgba(63,185,80,0.25);
+                                         padding:3px 10px; border-radius:6px;
+                                         font-size:11px;">
+                                ✓ Resolved
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <td style="padding:12px 16px;
+                               color:#8b949e; font-size:12px;">
+                        {{ alert['timestamp'] }}
+                    </td>
+
+                    <!-- Resolve button -->
+                    <td style="padding:12px 16px;">
+                        {% if alert['status'] == 'open' %}
+                        <form method="POST"
+                              action="{{ url_for('resolve_alert',
+                                                 alert_id=alert['id']) }}">
+                            <button type="submit"
+                                    title="Mark as resolved"
+                                    style="background:rgba(63,185,80,0.1);
+                                           color:#3fb950;
+                                           border:1px solid rgba(63,185,80,0.3);
+                                           border-radius:6px;
+                                           padding:4px 12px;
+                                           cursor:pointer;
+                                           font-size:13px;">
+                                <i class="bi bi-check2 me-1"></i>Resolve
+                            </button>
+                        </form>
+                        {% else %}
+                            <span style="color:#484f58; font-size:12px;">
+                                — Resolved
+                            </span>
+                        {% endif %}
+                    </td>
+
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-        {% else %}
-        <div class="empty-state">
-            <i class="bi bi-check-circle text-success"></i>
-            <p>No alerts found — system is secure</p>
-        </div>
-        {% endif %}
     </div>
+
+    {% else %}
+    <div style="text-align:center; padding:50px 20px;">
+        <i class="bi bi-shield-check"
+           style="font-size:40px; color:#3fb950;
+                  display:block; margin-bottom:12px;"></i>
+        <p style="color:#8b949e;">
+            No alerts — system is secure
+        </p>
+        <p style="color:#484f58; font-size:12px;">
+            Upload logs to trigger the detection engine
+        </p>
+    </div>
+    {% endif %}
+
 </div>
+
 {% endblock %}
