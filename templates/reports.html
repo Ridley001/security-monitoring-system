@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+
+{% block page_title %}
+    <i class="bi bi-file-earmark-pdf-fill me-2"></i>Generate Report
+{% endblock %}
+
+{% block content %}
+
+<div class="page-heading">
+    <h4>Security Report Generator</h4>
+    <p>Generate a professional PDF report for any time period</p>
+</div>
+
+<!-- ── REPORT FORM CARD ───────────────────────────────────── -->
+<div class="row justify-content-center">
+    <div class="col-md-8">
+
+        <div style="background:#161b22;
+                    border:1px solid #30363d;
+                    border-radius:14px;
+                    margin-bottom:24px;">
+
+            <div style="background:#1c2128;
+                        border-bottom:1px solid #30363d;
+                        padding:16px 24px;
+                        border-radius:14px 14px 0 0;
+                        font-weight:600;
+                        font-size:15px;">
+                <i class="bi bi-calendar-range text-info me-2"></i>
+                Select Report Period
+            </div>
+
+            <div style="padding:28px 24px;">
+
+                <form method="POST"
+                      action="{{ url_for('generate_report') }}">
+
+                    <div class="row g-4">
+
+                        <!-- From Date -->
+                        <div class="col-md-6">
+                            <label style="color:#8b949e;
+                                          font-size:13px;
+                                          display:block;
+                                          margin-bottom:8px;">
+                                <i class="bi bi-calendar-event me-1"></i>
+                                From Date
+                            </label>
+                            <input type="date"
+                                   name="date_from"
+                                   required
+                                   class="form-control"
+                                   style="background:#1c2128;
+                                          border:1px solid #30363d;
+                                          color:#e6edf3;
+                                          padding:10px 14px;
+                                          border-radius:8px;
+                                          font-size:14px;">
+                        </div>
+
+                        <!-- To Date -->
+                        <div class="col-md-6">
+                            <label style="color:#8b949e;
+                                          font-size:13px;
+                                          display:block;
+                                          margin-bottom:8px;">
+                                <i class="bi bi-calendar-check me-1"></i>
+                                To Date
+                            </label>
+                            <input type="date"
+                                   name="date_to"
+                                   required
+                                   class="form-control"
+                                   style="background:#1c2128;
+                                          border:1px solid #30363d;
+                                          color:#e6edf3;
+                                          padding:10px 14px;
+                                          border-radius:8px;
+                                          font-size:14px;">
+                        </div>
+
+                    </div>
+
+                    <!-- Report contents info -->
+                    <div style="margin-top:24px;
+                                background:rgba(88,166,255,0.06);
+                                border:1px solid rgba(88,166,255,0.15);
+                                border-radius:10px;
+                                padding:16px 20px;">
+
+                        <p style="color:#58a6ff;
+                                  font-size:13px;
+                                  font-weight:600;
+                                  margin-bottom:10px;">
+                            <i class="bi bi-info-circle me-2"></i>
+                            This PDF report will include:
+                        </p>
+
+                        <div class="row g-2">
+                            {% for item in [
+                                ('bi-file-text',      '#58a6ff',
+                                 'Executive Summary', 'Key stats at a glance'),
+                                ('bi-exclamation-triangle', '#f85149',
+                                 'Security Alerts',   'All alerts in the period'),
+                                ('bi-journal-text',   '#8b949e',
+                                 'Log Activity',      'Up to 30 log entries'),
+                                ('bi-slash-circle',   '#d29922',
+                                 'Blocked IPs',       'All currently blocked IPs'),
+                            ] %}
+                            <div class="col-md-6">
+                                <div style="display:flex;
+                                            align-items:center;
+                                            gap:10px;
+                                            padding:8px 0;">
+                                    <i class="bi {{ item[0] }}"
+                                       style="color:{{ item[1] }};
+                                              font-size:16px;
+                                              width:20px;"></i>
+                                    <div>
+                                        <div style="color:#e6edf3;
+                                                    font-size:13px;
+                                                    font-weight:600;">
+                                            {{ item[2] }}
+                                        </div>
+                                        <div style="color:#8b949e;
+                                                    font-size:11px;">
+                                            {{ item[3] }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Generate button -->
+                    <div style="margin-top:24px;">
+                        <button type="submit"
+                                class="btn btn-purple w-100"
+                                style="padding:12px;
+                                       font-size:15px;
+                                       font-weight:600;
+                                       border-radius:10px;">
+                            <i class="bi bi-file-earmark-pdf-fill me-2"></i>
+                            Generate & Download PDF Report
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
+        <!-- Quick date range buttons -->
+        <div style="background:#161b22;
+                    border:1px solid #30363d;
+                    border-radius:14px;
+                    padding:20px 24px;">
+
+            <p style="color:#8b949e;
+                      font-size:13px;
+                      margin-bottom:14px;
+                      font-weight:600;">
+                <i class="bi bi-lightning-fill text-warning me-2"></i>
+                Quick Select (click to auto-fill dates):
+            </p>
+
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+
+                <button onclick="setDates(7)"
+                        type="button"
+                        class="btn btn-sm"
+                        style="background:rgba(123,111,240,0.1);
+                               color:#a78bfa;
+                               border:1px solid rgba(123,111,240,0.3);
+                               border-radius:8px;">
+                    Last 7 Days
+                </button>
+
+                <button onclick="setDates(30)"
+                        type="button"
+                        class="btn btn-sm"
+                        style="background:rgba(123,111,240,0.1);
+                               color:#a78bfa;
+                               border:1px solid rgba(123,111,240,0.3);
+                               border-radius:8px;">
+                    Last 30 Days
+                </button>
+
+                <button onclick="setDates(1)"
+                        type="button"
+                        class="btn btn-sm"
+                        style="background:rgba(123,111,240,0.1);
+                               color:#a78bfa;
+                               border:1px solid rgba(123,111,240,0.3);
+                               border-radius:8px;">
+                    Today Only
+                </button>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function setDates(days) {
+    const today = new Date();
+    const from  = new Date();
+    from.setDate(today.getDate() - (days - 1));
+
+    // Format dates as YYYY-MM-DD for the date inputs
+    const toStr   = today.toISOString().split('T')[0];
+    const fromStr = from.toISOString().split('T')[0];
+
+    document.querySelector('input[name="date_from"]').value = fromStr;
+    document.querySelector('input[name="date_to"]').value   = toStr;
+}
+</script>
+{% endblock %}

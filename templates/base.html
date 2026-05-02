@@ -81,6 +81,14 @@
             Live Monitor
         </a>
 
+        <div class="sidebar-label">Reports</div>
+
+        <a href="{{ url_for('reports') }}"
+           class="nav-link {% if request.endpoint == 'reports' %}active{% endif %}">
+            <i class="bi bi-file-earmark-pdf-fill"></i>
+            Generate Report
+        </a>
+
     </nav>
 
     <div class="sidebar-footer">

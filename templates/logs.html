@@ -346,42 +346,7 @@
                     <td style="padding:12px 16px;">
                         <div style="display:flex; gap:6px; align-items:center;">
 
-                            <!-- Block IP button OR Already Blocked label -->
-                            {% if is_blocked %}
-                                <span style="background:rgba(248,81,73,0.08);
-                                             color:#8b949e;
-                                             border:1px solid #30363d;
-                                             border-radius:6px;
-                                             padding:4px 8px;
-                                             font-size:11px;">
-                                    <i class="bi bi-slash-circle me-1"></i>
-                                    Blocked
-                                </span>
-                            {% else %}
-                                <form method="POST"
-                                      action="{{ url_for('block_ip_from_log') }}">
-                                    <input type="hidden"
-                                           name="ip_address"
-                                           value="{{ log_ip }}">
-                                    <input type="hidden"
-                                           name="reason"
-                                           value="Blocked from logs — event: {{ log_event }}">
-                                    <button type="submit"
-                                            title="Block {{ log_ip }}"
-                                            onclick="return confirm('Block IP {{ log_ip }}?')"
-                                            style="background:rgba(210,153,34,0.1);
-                                                   color:#d29922;
-                                                   border:1px solid rgba(210,153,34,0.3);
-                                                   border-radius:6px;
-                                                   padding:4px 10px;
-                                                   cursor:pointer;
-                                                   font-size:13px;
-                                                   white-space:nowrap;">
-                                        <i class="bi bi-slash-circle"></i>
-                                        Block IP
-                                    </button>
-                                </form>
-                            {% endif %}
+                            
 
                             <!-- Delete log button -->
                             <form method="POST"
