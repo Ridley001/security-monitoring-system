@@ -178,15 +178,69 @@ def dashboard():
 @app.route('/alerts')
 @login_required
 def alerts():
+    """Alerts page with search and filter support."""
     db = get_db()
-    all_alerts  = db.execute(
-        'SELECT * FROM alerts ORDER BY timestamp DESC').fetchall()
-    alert_count = db.execute(
-        'SELECT COUNT(*) FROM alerts WHERE status = "open"').fetchone()[0]
+
+    # ── Get filter values ────────────────────────────────────────
+    search   = request.args.get('search',   '').strip()
+    severity = request.args.get('severity', '').strip()
+    status   = request.args.get('status',   '').strip()
+
+    # ── Build dynamic query ──────────────────────────────────────
+    query  = 'SELECT * FROM alerts WHERE 1=1'
+    params = []
+
+    if search:
+        query += ' AND (ip_address LIKE ? OR alert_type LIKE ?)'
+        params.extend([f'%{search}%', f'%{search}%'])
+
+    if severity:
+        query += ' AND severity = ?'
+        params.append(severity)
+
+    if status:
+        query += ' AND status = ?'
+        params.append(status)
+
+    query += ' ORDER BY timestamp DESC'
+
+    all_alerts = db.execute(query, params).fetchall()
+
+    # ── Stat counts ──────────────────────────────────────────────
+    open_count     = db.execute(
+        'SELECT COUNT(*) FROM alerts '
+        'WHERE status = "open"').fetchone()[0]
+    resolved_count = db.execute(
+        'SELECT COUNT(*) FROM alerts '
+        'WHERE status = "resolved"').fetchone()[0]
+    high_count     = db.execute(
+        'SELECT COUNT(*) FROM alerts '
+        'WHERE severity = "high" '
+        'AND status = "open"').fetchone()[0]
+    total_count    = db.execute(
+        'SELECT COUNT(*) FROM alerts').fetchone()[0]
+
+    alert_count = open_count
+
+    # ── Get blocked IPs for button state ────────────────────────
+    blocked_ip_list = [
+        row['ip_address'] for row in
+        db.execute('SELECT ip_address FROM blocked_ips').fetchall()
+    ]
+
     db.close()
+
     return render_template('alerts.html',
                            alerts=all_alerts,
-                           alert_count=alert_count)
+                           open_count=open_count,
+                           resolved_count=resolved_count,
+                           high_count=high_count,
+                           total_count=total_count,
+                           alert_count=alert_count,
+                           blocked_ip_list=blocked_ip_list,
+                           search=search,
+                           severity=severity,
+                           status=status)
 
 
 # ── RESOLVE ALERT ────────────────────────────────────────────────
@@ -203,7 +257,63 @@ def resolve_alert(alert_id):
     return redirect(url_for('alerts'))
 
 
-# ── API: ALERT COUNT (for real-time popup) ───────────────────────
+# ── DELETE SINGLE ALERT ──────────────────────────────────────────
+@app.route('/delete-alert/<int:alert_id>', methods=['POST'])
+@login_required
+def delete_alert(alert_id):
+    db = get_db()
+    db.execute('DELETE FROM alerts WHERE id = ?', (alert_id,))
+    db.commit()
+    db.close()
+    flash('🗑️ Alert deleted.', 'success')
+    return redirect(url_for('alerts'))
+
+
+# ── CLEAR RESOLVED ALERTS ────────────────────────────────────────
+@app.route('/clear-resolved-alerts', methods=['POST'])
+@login_required
+def clear_resolved_alerts():
+    db = get_db()
+    db.execute('DELETE FROM alerts WHERE status = "resolved"')
+    db.commit()
+    db.close()
+    flash('🗑️ All resolved alerts cleared.', 'success')
+    return redirect(url_for('alerts'))
+
+
+# ── BLOCK IP FROM ALERT ──────────────────────────────────────────
+@app.route('/block-ip-from-alert', methods=['POST'])
+@login_required
+def block_ip_from_alert():
+    ip_address = request.form.get('ip_address', '').strip()
+    reason     = request.form.get('reason',
+                                  'Blocked from alerts page').strip()
+
+    if not ip_address:
+        flash('No IP address provided.', 'danger')
+        return redirect(url_for('alerts'))
+
+    db = get_db()
+    already = db.execute(
+        'SELECT id FROM blocked_ips WHERE ip_address = ?',
+        (ip_address,)
+    ).fetchone()
+
+    if already:
+        flash(f'⚠️ {ip_address} is already blocked.', 'warning')
+    else:
+        db.execute(
+            'INSERT INTO blocked_ips (ip_address, reason) VALUES (?, ?)',
+            (ip_address, reason)
+        )
+        db.commit()
+        flash(f'🚫 {ip_address} has been blocked!', 'success')
+
+    db.close()
+    return redirect(url_for('alerts'))
+
+
+# ── API: ALERT COUNT ─────────────────────────────────────────────
 @app.route('/api/alert-count')
 @login_required
 def api_alert_count():
@@ -264,7 +374,8 @@ def logs():
     query += ' ORDER BY timestamp DESC'
 
     all_logs         = db.execute(query, params).fetchall()
-    total_logs       = db.execute('SELECT COUNT(*) FROM logs').fetchone()[0]
+    total_logs       = db.execute(
+        'SELECT COUNT(*) FROM logs').fetchone()[0]
     failed_count     = db.execute(
         'SELECT COUNT(*) FROM logs '
         'WHERE event_type = "failed_login"').fetchone()[0]
@@ -329,9 +440,6 @@ def upload_logs():
         db     = get_db()
         count  = 0
         errors = 0
-
-        # ── STEP 1: Insert ALL logs first ────────────────────────
-        # Collect unique IPs and events for detection later
         inserted = []
 
         for entry in data:
@@ -353,13 +461,9 @@ def upload_logs():
                 print(f'Log insert error: {e}')
                 errors += 1
 
-        # ── STEP 2: Commit ALL logs to database FIRST ────────────
-        # Detection engine needs logs to be saved before it counts them
         db.commit()
         db.close()
 
-        # ── STEP 3: Run detection engine AFTER commit ────────────
-        # Now the logs are in the database and detection can find them
         unique_pairs = list(set(inserted))
         for ip, event in unique_pairs:
             try:
@@ -367,14 +471,12 @@ def upload_logs():
             except Exception as e:
                 print(f'Detection error for {ip}: {e}')
 
-        # ── STEP 4: Count how many alerts were created ───────────
         db2 = get_db()
         new_alert_count = db2.execute(
             'SELECT COUNT(*) FROM alerts WHERE status = "open"'
         ).fetchone()[0]
         db2.close()
 
-        # ── STEP 5: Show result message ──────────────────────────
         if errors:
             flash(
                 f'✅ {count} logs imported. ⚠️ {errors} entries skipped. '
@@ -382,8 +484,8 @@ def upload_logs():
                 'warning')
         else:
             flash(
-                f'✅ {count} logs imported successfully! '
-                f'🚨 {new_alert_count} open alert(s) detected by engine.',
+                f'✅ {count} logs imported! '
+                f'🚨 {new_alert_count} open alert(s) detected.',
                 'success')
 
     except Exception as e:

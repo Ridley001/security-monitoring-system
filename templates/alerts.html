@@ -15,41 +15,206 @@
 <!-- ── STAT CARDS ─────────────────────────────────────────── -->
 <div class="row g-3 mb-4">
 
-    <div class="col-md-4">
-        <div class="stat-card">
-            <div class="stat-icon red">
-                <i class="bi bi-exclamation-triangle-fill"></i>
+    <div class="col-md-3">
+        <a href="{{ url_for('alerts', status='open') }}"
+           style="text-decoration:none;">
+            <div class="stat-card">
+                <div class="stat-icon red">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ open_count }}</h3>
+                    <p>Open Alerts</p>
+                </div>
             </div>
-            <div class="stat-info">
-                <h3>{{ alerts|selectattr('status','equalto','open')|list|length }}</h3>
-                <p>Open Alerts</p>
-            </div>
-        </div>
+        </a>
     </div>
 
-    <div class="col-md-4">
-        <div class="stat-card">
-            <div class="stat-icon green">
-                <i class="bi bi-check-circle-fill"></i>
+    <div class="col-md-3">
+        <a href="{{ url_for('alerts', status='resolved') }}"
+           style="text-decoration:none;">
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ resolved_count }}</h3>
+                    <p>Resolved Alerts</p>
+                </div>
             </div>
-            <div class="stat-info">
-                <h3>{{ alerts|selectattr('status','equalto','resolved')|list|length }}</h3>
-                <p>Resolved Alerts</p>
-            </div>
-        </div>
+        </a>
     </div>
 
-    <div class="col-md-4">
-        <div class="stat-card">
-            <div class="stat-icon blue">
-                <i class="bi bi-shield-fill"></i>
+    <div class="col-md-3">
+        <a href="{{ url_for('alerts', severity='high', status='open') }}"
+           style="text-decoration:none;">
+            <div class="stat-card">
+                <div class="stat-icon red">
+                    <i class="bi bi-shield-exclamation"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ high_count }}</h3>
+                    <p>High Severity</p>
+                </div>
             </div>
-            <div class="stat-info">
-                <h3>{{ alerts|length }}</h3>
-                <p>Total Alerts</p>
-            </div>
-        </div>
+        </a>
     </div>
+
+    <div class="col-md-3">
+        <a href="{{ url_for('alerts') }}"
+           style="text-decoration:none;">
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <i class="bi bi-shield-fill"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ total_count }}</h3>
+                    <p>Total Alerts</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+</div>
+
+<!-- ── FILTER BAR ─────────────────────────────────────────── -->
+<div style="background:#161b22;
+            border:1px solid #30363d;
+            border-radius:14px;
+            margin-bottom:16px;">
+
+    <div style="background:#1c2128;
+                border-bottom:1px solid #30363d;
+                padding:14px 20px;
+                border-radius:14px 14px 0 0;
+                display:flex;
+                align-items:center;
+                font-weight:600;
+                font-size:14px;">
+        <i class="bi bi-funnel-fill text-info me-2"></i>
+        Search & Filter Alerts
+    </div>
+
+    <div style="padding:16px 20px;">
+        <form method="GET" action="{{ url_for('alerts') }}">
+            <div class="row g-3 align-items-end">
+
+                <!-- Search -->
+                <div class="col-md-4">
+                    <label class="form-label small"
+                           style="color:#8b949e;">
+                        Search by IP or Alert Type
+                    </label>
+                    <input type="text"
+                           name="search"
+                           value="{{ search }}"
+                           class="form-control"
+                           placeholder="e.g. 192.168.1.1 or Brute Force"
+                           style="background:#1c2128;
+                                  border:1px solid #30363d;
+                                  color:#e6edf3;">
+                </div>
+
+                <!-- Severity -->
+                <div class="col-md-3">
+                    <label class="form-label small"
+                           style="color:#8b949e;">
+                        Severity (optional)
+                    </label>
+                    <select name="severity"
+                            class="form-select"
+                            style="background:#1c2128;
+                                   border:1px solid #30363d;
+                                   color:#e6edf3;">
+                        <option value="">All Severities</option>
+                        <option value="high"
+                            {% if severity == 'high' %}selected{% endif %}>
+                            🔴 High
+                        </option>
+                        <option value="medium"
+                            {% if severity == 'medium' %}selected{% endif %}>
+                            🟡 Medium
+                        </option>
+                        <option value="low"
+                            {% if severity == 'low' %}selected{% endif %}>
+                            🟢 Low
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Status -->
+                <div class="col-md-3">
+                    <label class="form-label small"
+                           style="color:#8b949e;">
+                        Status (optional)
+                    </label>
+                    <select name="status"
+                            class="form-select"
+                            style="background:#1c2128;
+                                   border:1px solid #30363d;
+                                   color:#e6edf3;">
+                        <option value="">All Statuses</option>
+                        <option value="open"
+                            {% if status == 'open' %}selected{% endif %}>
+                            ● Open
+                        </option>
+                        <option value="resolved"
+                            {% if status == 'resolved' %}selected{% endif %}>
+                            ✓ Resolved
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Search button -->
+                <div class="col-md-2">
+                    <button type="submit"
+                            class="btn btn-purple w-100">
+                        <i class="bi bi-search me-1"></i>Search
+                    </button>
+                </div>
+
+            </div>
+
+            {% if search or severity or status %}
+            <div class="mt-2">
+                <a href="{{ url_for('alerts') }}"
+                   style="color:#8b949e; font-size:13px;">
+                    <i class="bi bi-x-circle me-1"></i>Clear all filters
+                </a>
+            </div>
+            {% endif %}
+
+        </form>
+    </div>
+</div>
+
+<!-- ── ACTION BUTTONS ─────────────────────────────────────── -->
+<div style="display:flex;
+            gap:10px;
+            margin-bottom:16px;
+            flex-wrap:wrap;
+            align-items:center;">
+
+    <!-- Clear resolved alerts -->
+    <form method="POST"
+          action="{{ url_for('clear_resolved_alerts') }}"
+          onsubmit="return confirm(
+            'Delete all resolved alerts?')">
+        <button type="submit"
+                class="btn btn-sm"
+                style="background:rgba(88,166,255,0.1);
+                       color:#58a6ff;
+                       border:1px solid rgba(88,166,255,0.3);">
+            <i class="bi bi-archive me-1"></i>
+            Clear Resolved
+        </button>
+    </form>
+
+    <span style="margin-left:auto;
+                 color:#8b949e;
+                 font-size:13px;">
+        Showing {{ alerts|length }} alerts
+    </span>
 
 </div>
 
@@ -70,10 +235,10 @@
                 font-size:14px;">
         <span>
             <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>
-            All Alerts
+            Alert Entries
         </span>
         <span style="color:#8b949e; font-size:12px; font-weight:400;">
-            {{ alerts|length }} total
+            {{ alerts|length }} result{{ 's' if alerts|length != 1 }}
         </span>
     </div>
 
@@ -99,7 +264,7 @@
                     <th style="padding:12px 16px; color:#8b949e;
                                font-weight:600; text-align:left;">Time</th>
                     <th style="padding:12px 16px; color:#8b949e;
-                               font-weight:600; text-align:left;">Action</th>
+                               font-weight:600; text-align:left;">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -123,17 +288,17 @@
                         <code style="color:#58a6ff;">{{ alert_ip }}</code>
                     </td>
 
-                    <td style="padding:12px 16px; color:#e6edf3;
-                               font-weight:600;">
+                    <td style="padding:12px 16px;
+                               color:#e6edf3; font-weight:600;">
                         {{ alert['alert_type'] }}
                     </td>
 
                     <td style="padding:12px 16px; color:#8b949e;
-                               max-width:300px;">
+                               max-width:250px; font-size:12px;">
                         {{ alert['description'] }}
                     </td>
 
-                    <!-- Severity badge -->
+                    <!-- Severity -->
                     <td style="padding:12px 16px;">
                         {% if alert['severity'] == 'high' %}
                             <span style="background:rgba(248,81,73,0.12);
@@ -162,7 +327,7 @@
                         {% endif %}
                     </td>
 
-                    <!-- Status badge -->
+                    <!-- Status -->
                     <td style="padding:12px 16px;">
                         {% if alert['status'] == 'open' %}
                             <span style="background:rgba(248,81,73,0.12);
@@ -188,29 +353,92 @@
                         {{ alert['timestamp'] }}
                     </td>
 
-                    <!-- Resolve button -->
+                    <!-- Actions -->
                     <td style="padding:12px 16px;">
-                        {% if alert['status'] == 'open' %}
-                        <form method="POST"
-                              action="{{ url_for('resolve_alert',
-                                                 alert_id=alert['id']) }}">
-                            <button type="submit"
-                                    title="Mark as resolved"
-                                    style="background:rgba(63,185,80,0.1);
-                                           color:#3fb950;
-                                           border:1px solid rgba(63,185,80,0.3);
-                                           border-radius:6px;
-                                           padding:4px 12px;
-                                           cursor:pointer;
-                                           font-size:13px;">
-                                <i class="bi bi-check2 me-1"></i>Resolve
-                            </button>
-                        </form>
-                        {% else %}
-                            <span style="color:#484f58; font-size:12px;">
-                                — Resolved
-                            </span>
-                        {% endif %}
+                        <div style="display:flex;
+                                    gap:6px;
+                                    align-items:center;
+                                    flex-wrap:wrap;">
+
+                            <!-- Resolve button -->
+                            {% if alert['status'] == 'open' %}
+                            <form method="POST"
+                                  action="{{ url_for('resolve_alert',
+                                             alert_id=alert['id']) }}">
+                                <button type="submit"
+                                        title="Mark as resolved"
+                                        style="background:rgba(63,185,80,0.1);
+                                               color:#3fb950;
+                                               border:1px solid
+                                               rgba(63,185,80,0.3);
+                                               border-radius:6px;
+                                               padding:4px 10px;
+                                               cursor:pointer;
+                                               font-size:12px;">
+                                    <i class="bi bi-check2 me-1"></i>
+                                    Resolve
+                                </button>
+                            </form>
+                            {% endif %}
+
+                            <!-- Block IP button -->
+                            {% if alert_ip in blocked_ip_list %}
+                                <span style="background:rgba(248,81,73,0.08);
+                                             color:#8b949e;
+                                             border:1px solid #30363d;
+                                             border-radius:6px;
+                                             padding:4px 8px;
+                                             font-size:11px;">
+                                    <i class="bi bi-slash-circle me-1"></i>
+                                    Blocked
+                                </span>
+                            {% else %}
+                                <form method="POST"
+                                      action="{{ url_for('block_ip_from_alert') }}">
+                                    <input type="hidden"
+                                           name="ip_address"
+                                           value="{{ alert_ip }}">
+                                    <input type="hidden"
+                                           name="reason"
+                                           value="Blocked from alert — {{ alert['alert_type'] }}">
+                                    <button type="submit"
+                                            title="Block {{ alert_ip }}"
+                                            onclick="return confirm('Block IP {{ alert_ip }}?')"
+                                            style="background:rgba(210,153,34,0.1);
+                                                   color:#d29922;
+                                                   border:1px solid
+                                                   rgba(210,153,34,0.3);
+                                                   border-radius:6px;
+                                                   padding:4px 10px;
+                                                   cursor:pointer;
+                                                   font-size:12px;">
+                                        <i class="bi bi-slash-circle"></i>
+                                        Block IP
+                                    </button>
+                                </form>
+                            {% endif %}
+
+                            <!-- Delete button -->
+                            <form method="POST"
+                                  action="{{ url_for('delete_alert',
+                                             alert_id=alert['id']) }}">
+                                <button type="submit"
+                                        title="Delete alert"
+                                        onclick="return confirm(
+                                          'Delete this alert?')"
+                                        style="background:rgba(248,81,73,0.1);
+                                               color:#f85149;
+                                               border:1px solid
+                                               rgba(248,81,73,0.3);
+                                               border-radius:6px;
+                                               padding:4px 10px;
+                                               cursor:pointer;
+                                               font-size:12px;">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+
+                        </div>
                     </td>
 
                 </tr>
@@ -225,11 +453,18 @@
            style="font-size:40px; color:#3fb950;
                   display:block; margin-bottom:12px;"></i>
         <p style="color:#8b949e;">
-            No alerts — system is secure
+            {% if search or severity or status %}
+                No alerts match your filters
+            {% else %}
+                No alerts — system is secure
+            {% endif %}
         </p>
-        <p style="color:#484f58; font-size:12px;">
-            Upload logs to trigger the detection engine
-        </p>
+        {% if search or severity or status %}
+        <a href="{{ url_for('alerts') }}"
+           class="btn btn-sm btn-purple mt-2">
+            <i class="bi bi-x-circle me-1"></i>Clear Filters
+        </a>
+        {% endif %}
     </div>
     {% endif %}
 
