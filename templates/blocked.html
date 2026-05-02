@@ -9,10 +9,10 @@
 
 <div class="page-heading">
     <h4>Blocked IP Addresses</h4>
-    <p>IPs currently blocked from accessing monitored systems</p>
+    <p>Manage IPs blocked from accessing monitored systems</p>
 </div>
 
-<!-- Stat card -->
+<!-- ── STAT CARD ──────────────────────────────────────────── -->
 <div class="row g-3 mb-4">
     <div class="col-md-3">
         <div class="stat-card">
@@ -20,14 +20,136 @@
                 <i class="bi bi-slash-circle-fill"></i>
             </div>
             <div class="stat-info">
-                <h3>{{ blocked_ips|length }}</h3>
+                <h3>{{ total_blocked }}</h3>
                 <p>Blocked IPs</p>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Blocked IPs table -->
+<!-- ── MANUAL BLOCK FORM ──────────────────────────────────── -->
+<div style="background:#161b22;
+            border:1px solid #30363d;
+            border-radius:14px;
+            margin-bottom:16px;">
+
+    <div style="background:#1c2128;
+                border-bottom:1px solid #30363d;
+                padding:14px 20px;
+                border-radius:14px 14px 0 0;
+                font-weight:600;
+                font-size:14px;">
+        <i class="bi bi-shield-fill-x text-danger me-2"></i>
+        Manually Block an IP Address
+    </div>
+
+    <div style="padding:20px 24px;">
+        <form method="POST" action="{{ url_for('manual_block') }}">
+            <div class="row g-3 align-items-end">
+
+                <div class="col-md-4">
+                    <label style="color:#8b949e;
+                                  font-size:13px;
+                                  display:block;
+                                  margin-bottom:6px;">
+                        IP Address to Block
+                    </label>
+                    <input type="text"
+                           name="ip_address"
+                           required
+                           placeholder="e.g. 192.168.1.100"
+                           class="form-control"
+                           style="background:#1c2128;
+                                  border:1px solid #30363d;
+                                  color:#e6edf3;">
+                </div>
+
+                <div class="col-md-5">
+                    <label style="color:#8b949e;
+                                  font-size:13px;
+                                  display:block;
+                                  margin-bottom:6px;">
+                        Reason (optional)
+                    </label>
+                    <input type="text"
+                           name="reason"
+                           placeholder="e.g. Suspicious activity detected"
+                           class="form-control"
+                           style="background:#1c2128;
+                                  border:1px solid #30363d;
+                                  color:#e6edf3;">
+                </div>
+
+                <div class="col-md-3">
+                    <button type="submit"
+                            class="btn w-100"
+                            style="background:rgba(248,81,73,0.15);
+                                   color:#f85149;
+                                   border:1px solid rgba(248,81,73,0.4);
+                                   font-weight:600;">
+                        <i class="bi bi-slash-circle me-1"></i>
+                        Block IP
+                    </button>
+                </div>
+
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ── SEARCH BAR ─────────────────────────────────────────── -->
+<div style="background:#161b22;
+            border:1px solid #30363d;
+            border-radius:14px;
+            margin-bottom:16px;">
+
+    <div style="padding:16px 20px;">
+        <form method="GET" action="{{ url_for('blocked') }}">
+            <div class="row g-3 align-items-end">
+
+                <div class="col-md-8">
+                    <label style="color:#8b949e;
+                                  font-size:13px;
+                                  display:block;
+                                  margin-bottom:6px;">
+                        <i class="bi bi-search me-1"></i>
+                        Search Blocked IPs
+                    </label>
+                    <input type="text"
+                           name="search"
+                           value="{{ search }}"
+                           placeholder="Search by IP address or reason..."
+                           class="form-control"
+                           style="background:#1c2128;
+                                  border:1px solid #30363d;
+                                  color:#e6edf3;">
+                </div>
+
+                <div class="col-md-2">
+                    <button type="submit"
+                            class="btn btn-purple w-100">
+                        <i class="bi bi-search me-1"></i>Search
+                    </button>
+                </div>
+
+                <div class="col-md-2">
+                    {% if search %}
+                    <a href="{{ url_for('blocked') }}"
+                       class="btn w-100"
+                       style="background:rgba(255,255,255,0.05);
+                              color:#8b949e;
+                              border:1px solid #30363d;">
+                        <i class="bi bi-x me-1"></i>Clear
+                    </a>
+                    {% endif %}
+                </div>
+
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ── BLOCKED IPs TABLE ──────────────────────────────────── -->
 <div style="background:#161b22;
             border:1px solid #30363d;
             border-radius:14px;
@@ -46,8 +168,10 @@
             <i class="bi bi-slash-circle-fill text-danger me-2"></i>
             Blocked IP List
         </span>
-        <span style="color:#8b949e; font-size:12px; font-weight:400;">
-            {{ blocked_ips|length }} blocked
+        <span style="color:#8b949e;
+                     font-size:12px;
+                     font-weight:400;">
+            {{ blocked_ips|length }} result(s)
         </span>
     </div>
 
@@ -59,65 +183,103 @@
             <thead>
                 <tr style="border-bottom:1px solid #30363d;">
                     <th style="padding:12px 16px; color:#8b949e;
-                               font-weight:600; text-align:left;">#</th>
+                               font-weight:600; text-align:left;">
+                        #
+                    </th>
                     <th style="padding:12px 16px; color:#8b949e;
-                               font-weight:600; text-align:left;">IP Address</th>
+                               font-weight:600; text-align:left;">
+                        IP Address
+                    </th>
                     <th style="padding:12px 16px; color:#8b949e;
-                               font-weight:600; text-align:left;">Reason</th>
+                               font-weight:600; text-align:left;">
+                        Reason
+                    </th>
                     <th style="padding:12px 16px; color:#8b949e;
-                               font-weight:600; text-align:left;">Blocked At</th>
+                               font-weight:600; text-align:left;">
+                        Blocked At
+                    </th>
                     <th style="padding:12px 16px; color:#8b949e;
-                               font-weight:600; text-align:left;">Action</th>
+                               font-weight:600; text-align:left;">
+                        Actions
+                    </th>
                 </tr>
             </thead>
             <tbody>
                 {% for ip in blocked_ips %}
-
-                {# Store IP in variable to avoid backslash error #}
                 {% set blocked_ip = ip['ip_address'] %}
 
                 <tr style="border-bottom:1px solid #21262d;
-                           border-left:3px solid rgba(248,81,73,0.5);">
+                           border-left:3px solid
+                           rgba(248,81,73,0.5);">
 
-                    <td style="padding:12px 16px; color:#484f58;">
+                    <td style="padding:12px 16px;
+                               color:#484f58;">
                         {{ ip['id'] }}
                     </td>
 
                     <td style="padding:12px 16px;">
-                        <code style="color:#f85149;">
+                        <code style="color:#f85149;
+                                     font-size:13px;">
                             {{ blocked_ip }}
                         </code>
                     </td>
 
-                    <td style="padding:12px 16px; color:#8b949e;">
+                    <td style="padding:12px 16px;
+                               color:#8b949e;">
                         {{ ip['reason'] or '—' }}
                     </td>
 
                     <td style="padding:12px 16px;
-                               color:#8b949e; font-size:12px;">
+                               color:#8b949e;
+                               font-size:12px;">
                         {{ ip['blocked_at'] }}
                     </td>
 
-                    <!-- Unblock button -->
+                    <!-- Actions -->
                     <td style="padding:12px 16px;">
-                        <form method="POST"
-                              action="{{ url_for('unblock_ip', ip_id=ip['id']) }}">
-                            <button type="submit"
-                                    title="Unblock {{ blocked_ip }}"
-                                    onclick="return confirm('Unblock {{ blocked_ip }}?')"
-                                    style="background:rgba(63,185,80,0.1);
-                                           color:#3fb950;
-                                           border:1px solid rgba(63,185,80,0.3);
-                                           border-radius:6px;
-                                           padding:4px 12px;
-                                           cursor:pointer;
-                                           font-size:13px;">
-                                <i class="bi bi-unlock-fill me-1"></i>
-                                Unblock
-                            </button>
-                        </form>
-                    </td>
+                        <div style="display:flex;
+                                    gap:6px;
+                                    align-items:center;">
 
+                            <!-- View logs for this IP -->
+                            <a href="{{ url_for('view_ip_logs',
+                                       ip_address=blocked_ip) }}"
+                               title="View all logs from this IP"
+                               style="background:rgba(88,166,255,0.1);
+                                      color:#58a6ff;
+                                      border:1px solid
+                                      rgba(88,166,255,0.3);
+                                      border-radius:6px;
+                                      padding:4px 10px;
+                                      font-size:12px;
+                                      text-decoration:none;">
+                                <i class="bi bi-journal-text me-1">
+                                </i>View Logs
+                            </a>
+
+                            <!-- Unblock button -->
+                            <form method="POST"
+                                  action="{{ url_for('unblock_ip',
+                                             ip_id=ip['id']) }}">
+                                <button type="submit"
+                                        title="Unblock this IP"
+                                        onclick="return confirm(
+                                          'Unblock {{ blocked_ip }}?')"
+                                        style="background:rgba(63,185,80,0.1);
+                                               color:#3fb950;
+                                               border:1px solid
+                                               rgba(63,185,80,0.3);
+                                               border-radius:6px;
+                                               padding:4px 12px;
+                                               cursor:pointer;
+                                               font-size:12px;">
+                                    <i class="bi bi-unlock-fill me-1">
+                                    </i>Unblock
+                                </button>
+                            </form>
+
+                        </div>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -129,13 +291,15 @@
         <i class="bi bi-shield-check"
            style="font-size:40px; color:#3fb950;
                   display:block; margin-bottom:12px;"></i>
-        <p style="color:#8b949e;">No IPs are currently blocked</p>
-        <p style="color:#484f58; font-size:12px;">
-            Block IPs from the Logs page using the Block IP button
+        <p style="color:#8b949e;">
+            {% if search %}
+                No blocked IPs match your search
+            {% else %}
+                No IPs are currently blocked
+            {% endif %}
         </p>
     </div>
     {% endif %}
 
 </div>
-
 {% endblock %}

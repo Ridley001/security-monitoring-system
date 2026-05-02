@@ -8,7 +8,6 @@ from detection import run_detection
 import functools
 import json
 
-# ReportLab imports for PDF generation
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -83,7 +82,8 @@ def login_post():
     ip_address = request.remote_addr
 
     if is_brute_force(ip_address):
-        flash('Too many failed attempts. Please wait 60 seconds.', 'danger')
+        flash('Too many failed attempts. Please wait 60 seconds.',
+              'danger')
         return redirect(url_for('login'))
 
     db   = get_db()
@@ -119,19 +119,24 @@ def logout():
 def dashboard():
     db = get_db()
 
-    total_logs     = db.execute('SELECT COUNT(*) FROM logs').fetchone()[0]
+    total_logs     = db.execute(
+        'SELECT COUNT(*) FROM logs').fetchone()[0]
     total_alerts   = db.execute(
-        'SELECT COUNT(*) FROM alerts WHERE status = "open"').fetchone()[0]
+        'SELECT COUNT(*) FROM alerts '
+        'WHERE status = "open"').fetchone()[0]
     total_blocked  = db.execute(
         'SELECT COUNT(*) FROM blocked_ips').fetchone()[0]
     total_resolved = db.execute(
-        'SELECT COUNT(*) FROM alerts WHERE status = "resolved"').fetchone()[0]
+        'SELECT COUNT(*) FROM alerts '
+        'WHERE status = "resolved"').fetchone()[0]
     alert_count    = total_alerts
 
     recent_logs   = db.execute(
-        'SELECT * FROM logs ORDER BY timestamp DESC LIMIT 5').fetchall()
+        'SELECT * FROM logs '
+        'ORDER BY timestamp DESC LIMIT 5').fetchall()
     recent_alerts = db.execute(
-        'SELECT * FROM alerts ORDER BY timestamp DESC LIMIT 5').fetchall()
+        'SELECT * FROM alerts '
+        'ORDER BY timestamp DESC LIMIT 5').fetchall()
 
     chart_labels  = []
     chart_success = []
@@ -139,20 +144,23 @@ def dashboard():
 
     for i in range(6, -1, -1):
         day = db.execute('''
-            SELECT strftime('%m/%d', datetime('now', '-' || ? || ' days'))
+            SELECT strftime('%m/%d',
+            datetime('now', '-' || ? || ' days'))
         ''', (i,)).fetchone()[0]
         chart_labels.append(day)
 
         success = db.execute('''
             SELECT COUNT(*) FROM login_attempts
             WHERE success = 1
-            AND date(timestamp) = date('now', '-' || ? || ' days')
+            AND date(timestamp) =
+            date('now', '-' || ? || ' days')
         ''', (i,)).fetchone()[0]
 
         failed = db.execute('''
             SELECT COUNT(*) FROM login_attempts
             WHERE success = 0
-            AND date(timestamp) = date('now', '-' || ? || ' days')
+            AND date(timestamp) =
+            date('now', '-' || ? || ' days')
         ''', (i,)).fetchone()[0]
 
         chart_success.append(success)
@@ -163,8 +171,10 @@ def dashboard():
         FROM alerts GROUP BY alert_type
     ''').fetchall()
 
-    alert_types  = [r['alert_type'] for r in alert_type_rows] or ['No Alerts']
-    alert_counts = [r['cnt']        for r in alert_type_rows] or [1]
+    alert_types  = [r['alert_type']
+                    for r in alert_type_rows] or ['No Alerts']
+    alert_counts = [r['cnt']
+                    for r in alert_type_rows] or [1]
 
     db.close()
 
@@ -201,11 +211,9 @@ def alerts():
     if search:
         query += ' AND (ip_address LIKE ? OR alert_type LIKE ?)'
         params.extend([f'%{search}%', f'%{search}%'])
-
     if severity:
         query += ' AND severity = ?'
         params.append(severity)
-
     if status:
         query += ' AND status = ?'
         params.append(status)
@@ -221,14 +229,16 @@ def alerts():
         'WHERE status = "resolved"').fetchone()[0]
     high_count     = db.execute(
         'SELECT COUNT(*) FROM alerts '
-        'WHERE severity = "high" AND status = "open"').fetchone()[0]
+        'WHERE severity = "high" '
+        'AND status = "open"').fetchone()[0]
     total_count    = db.execute(
         'SELECT COUNT(*) FROM alerts').fetchone()[0]
     alert_count    = open_count
 
     blocked_ip_list = [
         row['ip_address'] for row in
-        db.execute('SELECT ip_address FROM blocked_ips').fetchall()
+        db.execute(
+            'SELECT ip_address FROM blocked_ips').fetchall()
     ]
 
     db.close()
@@ -285,14 +295,14 @@ def clear_resolved_alerts():
 @login_required
 def block_ip_from_alert():
     ip_address = request.form.get('ip_address', '').strip()
-    reason     = request.form.get('reason',
-                                  'Blocked from alerts page').strip()
+    reason     = request.form.get(
+        'reason', 'Blocked from alerts page').strip()
 
     if not ip_address:
         flash('No IP address provided.', 'danger')
         return redirect(url_for('alerts'))
 
-    db = get_db()
+    db      = get_db()
     already = db.execute(
         'SELECT id FROM blocked_ips WHERE ip_address = ?',
         (ip_address,)
@@ -302,7 +312,8 @@ def block_ip_from_alert():
         flash(f'⚠️ {ip_address} is already blocked.', 'warning')
     else:
         db.execute(
-            'INSERT INTO blocked_ips (ip_address, reason) VALUES (?, ?)',
+            'INSERT INTO blocked_ips (ip_address, reason) '
+            'VALUES (?, ?)',
             (ip_address, reason)
         )
         db.commit()
@@ -315,7 +326,7 @@ def block_ip_from_alert():
 @app.route('/api/alert-count')
 @login_required
 def api_alert_count():
-    db = get_db()
+    db    = get_db()
     count = db.execute(
         'SELECT COUNT(*) FROM alerts WHERE status = "open"'
     ).fetchone()[0]
@@ -359,7 +370,8 @@ def logs():
             OR   message    LIKE ?
             OR   source     LIKE ?)
         '''
-        params.extend([f'%{search}%', f'%{search}%', f'%{search}%'])
+        params.extend(
+            [f'%{search}%', f'%{search}%', f'%{search}%'])
 
     if event_type:
         query += ' AND event_type = ?'
@@ -384,14 +396,15 @@ def logs():
         'SELECT COUNT(*) FROM logs '
         'WHERE event_type = "suspicious_activity"').fetchone()[0]
     event_types      = db.execute(
-        'SELECT DISTINCT event_type FROM logs ORDER BY event_type'
-    ).fetchall()
+        'SELECT DISTINCT event_type '
+        'FROM logs ORDER BY event_type').fetchall()
     alert_count      = db.execute(
-        'SELECT COUNT(*) FROM alerts WHERE status = "open"'
-    ).fetchone()[0]
+        'SELECT COUNT(*) FROM alerts '
+        'WHERE status = "open"').fetchone()[0]
     blocked_ip_list  = [
         row['ip_address'] for row in
-        db.execute('SELECT ip_address FROM blocked_ips').fetchall()
+        db.execute(
+            'SELECT ip_address FROM blocked_ips').fetchall()
     ]
 
     db.close()
@@ -431,7 +444,9 @@ def upload_logs():
         data = json.load(file)
 
         if not isinstance(data, list):
-            flash('JSON file must contain a list of log entries.', 'danger')
+            flash(
+                'JSON file must contain a list of log entries.',
+                'danger')
             return redirect(url_for('logs'))
 
         db       = get_db()
@@ -441,13 +456,18 @@ def upload_logs():
 
         for entry in data:
             try:
-                ip    = str(entry.get('ip_address', '0.0.0.0')).strip()
-                event = str(entry.get('event_type', 'unknown')).strip()
-                msg   = str(entry.get('message',    '')).strip()
-                src   = str(entry.get('source',     'uploaded')).strip()
+                ip    = str(
+                    entry.get('ip_address', '0.0.0.0')).strip()
+                event = str(
+                    entry.get('event_type', 'unknown')).strip()
+                msg   = str(
+                    entry.get('message',    '')).strip()
+                src   = str(
+                    entry.get('source',     'uploaded')).strip()
 
                 db.execute('''
-                    INSERT INTO logs (ip_address, event_type, message, source)
+                    INSERT INTO logs
+                        (ip_address, event_type, message, source)
                     VALUES (?, ?, ?, ?)
                 ''', (ip, event, msg, src))
 
@@ -476,7 +496,8 @@ def upload_logs():
 
         if errors:
             flash(
-                f'✅ {count} logs imported. ⚠️ {errors} entries skipped. '
+                f'✅ {count} logs imported. '
+                f'⚠️ {errors} entries skipped. '
                 f'🚨 {new_alert_count} open alert(s) detected.',
                 'warning')
         else:
@@ -517,14 +538,14 @@ def delete_all_logs():
 @login_required
 def block_ip_from_log():
     ip_address = request.form.get('ip_address', '').strip()
-    reason     = request.form.get('reason',
-                                  'Blocked from logs page').strip()
+    reason     = request.form.get(
+        'reason', 'Blocked from logs page').strip()
 
     if not ip_address:
         flash('No IP address provided.', 'danger')
         return redirect(url_for('logs'))
 
-    db = get_db()
+    db      = get_db()
     already = db.execute(
         'SELECT id FROM blocked_ips WHERE ip_address = ?',
         (ip_address,)
@@ -534,51 +555,134 @@ def block_ip_from_log():
         flash(f'⚠️ {ip_address} is already blocked.', 'warning')
     else:
         db.execute(
-            'INSERT INTO blocked_ips (ip_address, reason) VALUES (?, ?)',
+            'INSERT INTO blocked_ips (ip_address, reason) '
+            'VALUES (?, ?)',
             (ip_address, reason)
         )
         db.commit()
-        flash(f'🚫 {ip_address} has been blocked successfully!', 'success')
+        flash(
+            f'🚫 {ip_address} has been blocked successfully!',
+            'success')
 
     db.close()
     return redirect(url_for('logs'))
 
 # ═══════════════════════════════════════════════════════════════
-#  BLOCKED IPs
+#  BLOCKED IPs  —  PHASE 9 UPGRADES
 # ═══════════════════════════════════════════════════════════════
 
 @app.route('/blocked')
 @login_required
 def blocked():
+    """Blocked IPs page with search and manual block."""
     db = get_db()
-    blocked_ips = db.execute(
-        'SELECT * FROM blocked_ips ORDER BY blocked_at DESC').fetchall()
-    alert_count = db.execute(
-        'SELECT COUNT(*) FROM alerts WHERE status = "open"').fetchone()[0]
+
+    # ── Search filter ────────────────────────────────────────────
+    search = request.args.get('search', '').strip()
+
+    if search:
+        blocked_ips = db.execute('''
+            SELECT * FROM blocked_ips
+            WHERE ip_address LIKE ?
+            OR    reason     LIKE ?
+            ORDER BY blocked_at DESC
+        ''', (f'%{search}%', f'%{search}%')).fetchall()
+    else:
+        blocked_ips = db.execute(
+            'SELECT * FROM blocked_ips '
+            'ORDER BY blocked_at DESC').fetchall()
+
+    total_blocked = db.execute(
+        'SELECT COUNT(*) FROM blocked_ips').fetchone()[0]
+    alert_count   = db.execute(
+        'SELECT COUNT(*) FROM alerts '
+        'WHERE status = "open"').fetchone()[0]
+
     db.close()
+
     return render_template('blocked.html',
                            blocked_ips=blocked_ips,
-                           alert_count=alert_count)
+                           total_blocked=total_blocked,
+                           alert_count=alert_count,
+                           search=search)
 
 
 @app.route('/unblock-ip/<int:ip_id>', methods=['POST'])
 @login_required
 def unblock_ip(ip_id):
-    db = get_db()
+    db     = get_db()
     ip_row = db.execute(
         'SELECT ip_address FROM blocked_ips WHERE id = ?',
         (ip_id,)
     ).fetchone()
 
     if ip_row:
-        db.execute('DELETE FROM blocked_ips WHERE id = ?', (ip_id,))
+        db.execute(
+            'DELETE FROM blocked_ips WHERE id = ?', (ip_id,))
         db.commit()
-        flash(f'✅ {ip_row["ip_address"]} has been unblocked.', 'success')
+        flash(
+            f'✅ {ip_row["ip_address"]} has been unblocked.',
+            'success')
     else:
         flash('IP not found.', 'danger')
 
     db.close()
     return redirect(url_for('blocked'))
+
+
+@app.route('/manual-block', methods=['POST'])
+@login_required
+def manual_block():
+    """Manually block any IP address the admin types in."""
+    ip_address = request.form.get('ip_address', '').strip()
+    reason     = request.form.get(
+        'reason', 'Manually blocked by admin').strip()
+
+    if not ip_address:
+        flash('Please enter an IP address.', 'danger')
+        return redirect(url_for('blocked'))
+
+    # Basic IP format validation
+    parts = ip_address.split('.')
+    if len(parts) != 4:
+        flash(
+            f'❌ Invalid IP address format: {ip_address}',
+            'danger')
+        return redirect(url_for('blocked'))
+
+    db      = get_db()
+    already = db.execute(
+        'SELECT id FROM blocked_ips WHERE ip_address = ?',
+        (ip_address,)
+    ).fetchone()
+
+    if already:
+        flash(
+            f'⚠️ {ip_address} is already blocked.',
+            'warning')
+    else:
+        db.execute(
+            'INSERT INTO blocked_ips (ip_address, reason) '
+            'VALUES (?, ?)',
+            (ip_address, reason)
+        )
+        db.commit()
+        flash(
+            f'🚫 {ip_address} has been manually blocked!',
+            'success')
+
+    db.close()
+    return redirect(url_for('blocked'))
+
+
+@app.route('/view-ip-logs/<ip_address>')
+@login_required
+def view_ip_logs(ip_address):
+    """
+    Redirect to logs page filtered by this specific IP.
+    Lets admin see all activity from a blocked IP.
+    """
+    return redirect(url_for('logs', search=ip_address))
 
 # ═══════════════════════════════════════════════════════════════
 #  LIVE MONITOR
@@ -589,10 +693,43 @@ def unblock_ip(ip_id):
 def live_monitor():
     db = get_db()
     alert_count = db.execute(
-        'SELECT COUNT(*) FROM alerts WHERE status = "open"').fetchone()[0]
+        'SELECT COUNT(*) FROM alerts '
+        'WHERE status = "open"').fetchone()[0]
+
+    # Get recent logs for live display
+    recent_logs = db.execute(
+        'SELECT * FROM logs '
+        'ORDER BY timestamp DESC LIMIT 20').fetchall()
+
     db.close()
     return render_template('live_monitor.html',
-                           alert_count=alert_count)
+                           alert_count=alert_count,
+                           recent_logs=recent_logs)
+
+
+# ── API: Live logs for auto-refresh ─────────────────────────────
+@app.route('/api/live-logs')
+@login_required
+def api_live_logs():
+    """Returns latest 20 logs as JSON for live monitor page."""
+    db   = get_db()
+    rows = db.execute(
+        'SELECT * FROM logs ORDER BY timestamp DESC LIMIT 20'
+    ).fetchall()
+    db.close()
+
+    logs = []
+    for r in rows:
+        logs.append({
+            'id':         r['id'],
+            'ip_address': r['ip_address'],
+            'event_type': r['event_type'],
+            'message':    r['message'],
+            'source':     r['source'],
+            'timestamp':  r['timestamp'],
+        })
+
+    return jsonify(logs)
 
 # ═══════════════════════════════════════════════════════════════
 #  REPORTS
@@ -601,10 +738,10 @@ def live_monitor():
 @app.route('/reports')
 @login_required
 def reports():
-    """Reports page — admin selects date range and generates PDF."""
     db = get_db()
     alert_count = db.execute(
-        'SELECT COUNT(*) FROM alerts WHERE status = "open"').fetchone()[0]
+        'SELECT COUNT(*) FROM alerts '
+        'WHERE status = "open"').fetchone()[0]
     db.close()
     return render_template('reports.html',
                            alert_count=alert_count)
@@ -613,8 +750,6 @@ def reports():
 @app.route('/generate-report', methods=['POST'])
 @login_required
 def generate_report():
-    """Generate and download a professional PDF security report."""
-
     date_from = request.form.get('date_from', '').strip()
     date_to   = request.form.get('date_to',   '').strip()
 
@@ -624,7 +759,6 @@ def generate_report():
 
     db = get_db()
 
-    # ── Fetch data for the selected period ───────────────────────
     logs_data = db.execute('''
         SELECT * FROM logs
         WHERE date(timestamp) BETWEEN ? AND ?
@@ -637,95 +771,65 @@ def generate_report():
         ORDER BY timestamp DESC
     ''', (date_from, date_to)).fetchall()
 
-    blocked_data = db.execute('''
-        SELECT * FROM blocked_ips
-        ORDER BY blocked_at DESC
-    ''').fetchall()
+    blocked_data = db.execute(
+        'SELECT * FROM blocked_ips '
+        'ORDER BY blocked_at DESC').fetchall()
 
-    # ── Summary counts ───────────────────────────────────────────
-    total_logs       = len(logs_data)
-    total_alerts     = len(alerts_data)
-    total_blocked    = len(blocked_data)
-    failed_logins    = sum(
-        1 for l in logs_data if l['event_type'] == 'failed_login')
+    total_logs        = len(logs_data)
+    total_alerts      = len(alerts_data)
+    total_blocked     = len(blocked_data)
+    failed_logins     = sum(
+        1 for l in logs_data
+        if l['event_type'] == 'failed_login')
     successful_logins = sum(
-        1 for l in logs_data if l['event_type'] == 'successful_login')
+        1 for l in logs_data
+        if l['event_type'] == 'successful_login')
     suspicious_events = sum(
-        1 for l in logs_data if l['event_type'] == 'suspicious_activity')
-    high_alerts      = sum(
+        1 for l in logs_data
+        if l['event_type'] == 'suspicious_activity')
+    high_alerts       = sum(
         1 for a in alerts_data if a['severity'] == 'high')
-    medium_alerts    = sum(
+    medium_alerts     = sum(
         1 for a in alerts_data if a['severity'] == 'medium')
-    open_alerts      = sum(
+    open_alerts       = sum(
         1 for a in alerts_data if a['status'] == 'open')
-    resolved_alerts  = sum(
+    resolved_alerts   = sum(
         1 for a in alerts_data if a['status'] == 'resolved')
 
     db.close()
 
-    # ═══════════════════════════════════════════════════════════
-    #  BUILD PDF
-    # ═══════════════════════════════════════════════════════════
     buffer = io.BytesIO()
     doc    = SimpleDocTemplate(
-        buffer,
-        pagesize=A4,
-        rightMargin=2*cm,
-        leftMargin=2*cm,
-        topMargin=2*cm,
-        bottomMargin=2*cm,
-    )
+        buffer, pagesize=A4,
+        rightMargin=2*cm, leftMargin=2*cm,
+        topMargin=2*cm,   bottomMargin=2*cm)
 
-    # ── Styles ───────────────────────────────────────────────────
-    styles = getSampleStyleSheet()
-
+    styles      = getSampleStyleSheet()
     style_title = ParagraphStyle(
-        'ReportTitle',
-        parent=styles['Title'],
-        fontSize=22,
-        textColor=colors.HexColor('#1a1a2e'),
-        spaceAfter=6,
-        alignment=TA_CENTER,
-        fontName='Helvetica-Bold',
-    )
+        'ReportTitle', parent=styles['Title'],
+        fontSize=22, textColor=colors.HexColor('#1a1a2e'),
+        spaceAfter=6, alignment=TA_CENTER,
+        fontName='Helvetica-Bold')
     style_subtitle = ParagraphStyle(
-        'Subtitle',
-        parent=styles['Normal'],
-        fontSize=11,
-        textColor=colors.HexColor('#555555'),
-        spaceAfter=4,
-        alignment=TA_CENTER,
-    )
+        'Subtitle', parent=styles['Normal'],
+        fontSize=11, textColor=colors.HexColor('#555555'),
+        spaceAfter=4, alignment=TA_CENTER)
     style_section = ParagraphStyle(
-        'SectionHeader',
-        parent=styles['Heading2'],
-        fontSize=13,
-        textColor=colors.HexColor('#1a1a2e'),
-        spaceBefore=16,
-        spaceAfter=8,
-        fontName='Helvetica-Bold',
-        borderPad=4,
-    )
+        'SectionHeader', parent=styles['Heading2'],
+        fontSize=13, textColor=colors.HexColor('#1a1a2e'),
+        spaceBefore=16, spaceAfter=8,
+        fontName='Helvetica-Bold')
     style_body = ParagraphStyle(
-        'BodyText',
-        parent=styles['Normal'],
-        fontSize=9,
-        textColor=colors.HexColor('#333333'),
-        spaceAfter=4,
-        leading=14,
-    )
+        'BodyText', parent=styles['Normal'],
+        fontSize=9, textColor=colors.HexColor('#333333'),
+        spaceAfter=4, leading=14)
     style_small = ParagraphStyle(
-        'SmallText',
-        parent=styles['Normal'],
-        fontSize=8,
-        textColor=colors.HexColor('#666666'),
-        leading=12,
-    )
+        'SmallText', parent=styles['Normal'],
+        fontSize=8, textColor=colors.HexColor('#666666'),
+        leading=12)
 
-    # ── Document elements list ────────────────────────────────────
     elements = []
 
-    # ── HEADER ───────────────────────────────────────────────────
     elements.append(Spacer(1, 0.3*inch))
     elements.append(Paragraph('SecureWatch', style_title))
     elements.append(Paragraph(
@@ -735,208 +839,179 @@ def generate_report():
         f'Report Period: {date_from} to {date_to}',
         style_subtitle))
     elements.append(Paragraph(
-        f'Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} '
-        f'| Generated by: {session.get("user", "Admin")}',
+        f'Generated: '
+        f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} '
+        f'| By: {session.get("user", "Admin")}',
         style_subtitle))
     elements.append(Spacer(1, 0.1*inch))
     elements.append(HRFlowable(
-        width='100%',
-        thickness=2,
+        width='100%', thickness=2,
         color=colors.HexColor('#1a1a2e')))
     elements.append(Spacer(1, 0.2*inch))
 
-    # ── SECTION 1: EXECUTIVE SUMMARY ─────────────────────────────
-    elements.append(Paragraph('1. Executive Summary', style_section))
-
+    elements.append(
+        Paragraph('1. Executive Summary', style_section))
     summary_data = [
         ['Metric', 'Value', 'Metric', 'Value'],
-        ['Total Logs',         str(total_logs),
-         'Total Alerts',       str(total_alerts)],
-        ['Failed Logins',      str(failed_logins),
-         'Open Alerts',        str(open_alerts)],
-        ['Successful Logins',  str(successful_logins),
-         'Resolved Alerts',    str(resolved_alerts)],
-        ['Suspicious Events',  str(suspicious_events),
-         'Blocked IPs',        str(total_blocked)],
-        ['High Severity',      str(high_alerts),
-         'Medium Severity',    str(medium_alerts)],
+        ['Total Logs',        str(total_logs),
+         'Total Alerts',      str(total_alerts)],
+        ['Failed Logins',     str(failed_logins),
+         'Open Alerts',       str(open_alerts)],
+        ['Successful Logins', str(successful_logins),
+         'Resolved Alerts',   str(resolved_alerts)],
+        ['Suspicious Events', str(suspicious_events),
+         'Blocked IPs',       str(total_blocked)],
+        ['High Severity',     str(high_alerts),
+         'Medium Severity',   str(medium_alerts)],
     ]
-
-    summary_table = Table(summary_data,
-                          colWidths=[4.5*cm, 3*cm, 4.5*cm, 3*cm])
+    summary_table = Table(
+        summary_data,
+        colWidths=[4.5*cm, 3*cm, 4.5*cm, 3*cm])
     summary_table.setStyle(TableStyle([
-        # Header row
-        ('BACKGROUND',   (0, 0), (-1, 0),
+        ('BACKGROUND',    (0,0), (-1,0),
          colors.HexColor('#1a1a2e')),
-        ('TEXTCOLOR',    (0, 0), (-1, 0), colors.white),
-        ('FONTNAME',     (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE',     (0, 0), (-1, 0), 9),
-        ('ALIGN',        (0, 0), (-1, 0), 'CENTER'),
-
-        # Data rows
-        ('FONTNAME',     (0, 1), (-1, -1), 'Helvetica'),
-        ('FONTSIZE',     (0, 1), (-1, -1), 9),
-        ('ALIGN',        (1, 1), (1, -1), 'CENTER'),
-        ('ALIGN',        (3, 1), (3, -1), 'CENTER'),
-
-        # Alternating row colors
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1),
+        ('TEXTCOLOR',     (0,0), (-1,0), colors.white),
+        ('FONTNAME',      (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE',      (0,0), (-1,0), 9),
+        ('ALIGN',         (0,0), (-1,0), 'CENTER'),
+        ('FONTNAME',      (0,1), (-1,-1), 'Helvetica'),
+        ('FONTSIZE',      (0,1), (-1,-1), 9),
+        ('ALIGN',         (1,1), (1,-1), 'CENTER'),
+        ('ALIGN',         (3,1), (3,-1), 'CENTER'),
+        ('ROWBACKGROUNDS',(0,1), (-1,-1),
          [colors.HexColor('#f8f9fa'), colors.white]),
-
-        # Grid
-        ('GRID',         (0, 0), (-1, -1), 0.5,
+        ('GRID',          (0,0), (-1,-1), 0.5,
          colors.HexColor('#dddddd')),
-        ('TOPPADDING',   (0, 0), (-1, -1), 6),
-        ('BOTTOMPADDING',(0, 0), (-1, -1), 6),
-        ('LEFTPADDING',  (0, 0), (-1, -1), 8),
+        ('TOPPADDING',    (0,0), (-1,-1), 6),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('LEFTPADDING',   (0,0), (-1,-1), 8),
     ]))
-
     elements.append(summary_table)
     elements.append(Spacer(1, 0.15*inch))
 
-    # ── SECTION 2: ALERTS ────────────────────────────────────────
-    elements.append(Paragraph('2. Security Alerts', style_section))
-
+    elements.append(
+        Paragraph('2. Security Alerts', style_section))
     if alerts_data:
-        alert_table_data = [
-            ['#', 'IP Address', 'Alert Type',
-             'Severity', 'Status', 'Timestamp']
-        ]
+        alert_table_data = [[
+            '#', 'IP Address', 'Alert Type',
+            'Severity', 'Status', 'Timestamp']]
         for i, a in enumerate(alerts_data[:30], 1):
             alert_table_data.append([
-                str(i),
-                a['ip_address'],
-                a['alert_type'],
+                str(i), a['ip_address'], a['alert_type'],
                 a['severity'].upper(),
                 a['status'].capitalize(),
-                str(a['timestamp'])[:16],
-            ])
-
+                str(a['timestamp'])[:16]])
         alert_table = Table(
             alert_table_data,
-            colWidths=[1*cm, 3.5*cm, 4.5*cm, 2.5*cm, 2.5*cm, 3.5*cm]
-        )
-
-        # Row colors based on severity
+            colWidths=[
+                1*cm, 3.5*cm, 4.5*cm,
+                2.5*cm, 2.5*cm, 3.5*cm])
         row_styles = [
-            ('BACKGROUND',   (0, 0), (-1, 0),
+            ('BACKGROUND',    (0,0), (-1,0),
              colors.HexColor('#c0392b')),
-            ('TEXTCOLOR',    (0, 0), (-1, 0), colors.white),
-            ('FONTNAME',     (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE',     (0, 0), (-1, -1), 8),
-            ('ALIGN',        (0, 0), (-1, -1), 'CENTER'),
-            ('GRID',         (0, 0), (-1, -1), 0.5,
+            ('TEXTCOLOR',     (0,0), (-1,0), colors.white),
+            ('FONTNAME',      (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE',      (0,0), (-1,-1), 8),
+            ('ALIGN',         (0,0), (-1,-1), 'CENTER'),
+            ('GRID',          (0,0), (-1,-1), 0.5,
              colors.HexColor('#dddddd')),
-            ('TOPPADDING',   (0, 0), (-1, -1), 5),
-            ('BOTTOMPADDING',(0, 0), (-1, -1), 5),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1),
+            ('TOPPADDING',    (0,0), (-1,-1), 5),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+            ('ROWBACKGROUNDS',(0,1), (-1,-1),
              [colors.HexColor('#fff5f5'), colors.white]),
         ]
-
-        # Color severity column
         for i, a in enumerate(alerts_data[:30], 1):
             if a['severity'] == 'high':
                 row_styles.append(
-                    ('TEXTCOLOR', (3, i), (3, i),
+                    ('TEXTCOLOR', (3,i), (3,i),
                      colors.HexColor('#c0392b')))
             elif a['severity'] == 'medium':
                 row_styles.append(
-                    ('TEXTCOLOR', (3, i), (3, i),
+                    ('TEXTCOLOR', (3,i), (3,i),
                      colors.HexColor('#e67e22')))
-
         alert_table.setStyle(TableStyle(row_styles))
         elements.append(alert_table)
-
         if len(alerts_data) > 30:
             elements.append(Spacer(1, 0.1*inch))
             elements.append(Paragraph(
-                f'* Showing first 30 of {len(alerts_data)} alerts.',
+                f'* Showing first 30 of '
+                f'{len(alerts_data)} alerts.',
                 style_small))
     else:
         elements.append(Paragraph(
-            'No alerts recorded in this period. System was secure.',
+            'No alerts in this period. System was secure.',
             style_body))
 
     elements.append(Spacer(1, 0.15*inch))
-
-    # ── SECTION 3: LOG SUMMARY ────────────────────────────────────
-    elements.append(Paragraph('3. Log Activity Summary', style_section))
-
+    elements.append(
+        Paragraph('3. Log Activity Summary', style_section))
     if logs_data:
-        log_table_data = [
-            ['#', 'IP Address', 'Event Type', 'Message', 'Source', 'Time']
-        ]
+        log_table_data = [[
+            '#', 'IP Address', 'Event Type',
+            'Message', 'Source', 'Time']]
         for i, l in enumerate(logs_data[:30], 1):
             log_table_data.append([
-                str(i),
-                l['ip_address'],
-                l['event_type'].replace('_', ' ').title(),
+                str(i), l['ip_address'],
+                l['event_type'].replace('_',' ').title(),
                 (l['message'] or '')[:40],
                 l['source'] or 'system',
-                str(l['timestamp'])[:16],
-            ])
-
+                str(l['timestamp'])[:16]])
         log_table = Table(
             log_table_data,
-            colWidths=[1*cm, 3.5*cm, 3.5*cm, 4*cm, 2*cm, 3.5*cm]
-        )
+            colWidths=[
+                1*cm, 3.5*cm, 3.5*cm,
+                4*cm, 2*cm, 3.5*cm])
         log_table.setStyle(TableStyle([
-            ('BACKGROUND',   (0, 0), (-1, 0),
+            ('BACKGROUND',    (0,0), (-1,0),
              colors.HexColor('#1a1a2e')),
-            ('TEXTCOLOR',    (0, 0), (-1, 0), colors.white),
-            ('FONTNAME',     (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE',     (0, 0), (-1, -1), 8),
-            ('ALIGN',        (0, 0), (-1, -1), 'CENTER'),
-            ('GRID',         (0, 0), (-1, -1), 0.5,
+            ('TEXTCOLOR',     (0,0), (-1,0), colors.white),
+            ('FONTNAME',      (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE',      (0,0), (-1,-1), 8),
+            ('ALIGN',         (0,0), (-1,-1), 'CENTER'),
+            ('GRID',          (0,0), (-1,-1), 0.5,
              colors.HexColor('#dddddd')),
-            ('TOPPADDING',   (0, 0), (-1, -1), 5),
-            ('BOTTOMPADDING',(0, 0), (-1, -1), 5),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1),
+            ('TOPPADDING',    (0,0), (-1,-1), 5),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+            ('ROWBACKGROUNDS',(0,1), (-1,-1),
              [colors.HexColor('#f8f9fa'), colors.white]),
         ]))
         elements.append(log_table)
-
         if len(logs_data) > 30:
             elements.append(Spacer(1, 0.1*inch))
             elements.append(Paragraph(
-                f'* Showing first 30 of {len(logs_data)} logs.',
+                f'* Showing first 30 of '
+                f'{len(logs_data)} logs.',
                 style_small))
     else:
         elements.append(Paragraph(
-            'No logs recorded in this period.',
-            style_body))
+            'No logs recorded in this period.', style_body))
 
     elements.append(Spacer(1, 0.15*inch))
-
-    # ── SECTION 4: BLOCKED IPs ────────────────────────────────────
-    elements.append(Paragraph('4. Blocked IP Addresses', style_section))
-
+    elements.append(
+        Paragraph('4. Blocked IP Addresses', style_section))
     if blocked_data:
-        blocked_table_data = [['#', 'IP Address', 'Reason', 'Blocked At']]
+        blocked_table_data = [
+            ['#', 'IP Address', 'Reason', 'Blocked At']]
         for i, b in enumerate(blocked_data, 1):
             blocked_table_data.append([
-                str(i),
-                b['ip_address'],
+                str(i), b['ip_address'],
                 b['reason'] or '—',
-                str(b['blocked_at'])[:16],
-            ])
-
+                str(b['blocked_at'])[:16]])
         blocked_table = Table(
             blocked_table_data,
-            colWidths=[1*cm, 4*cm, 7*cm, 4*cm]
-        )
+            colWidths=[1*cm, 4*cm, 7*cm, 4*cm])
         blocked_table.setStyle(TableStyle([
-            ('BACKGROUND',   (0, 0), (-1, 0),
+            ('BACKGROUND',    (0,0), (-1,0),
              colors.HexColor('#7b2d2d')),
-            ('TEXTCOLOR',    (0, 0), (-1, 0), colors.white),
-            ('FONTNAME',     (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE',     (0, 0), (-1, -1), 8),
-            ('ALIGN',        (0, 0), (-1, -1), 'CENTER'),
-            ('GRID',         (0, 0), (-1, -1), 0.5,
+            ('TEXTCOLOR',     (0,0), (-1,0), colors.white),
+            ('FONTNAME',      (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE',      (0,0), (-1,-1), 8),
+            ('ALIGN',         (0,0), (-1,-1), 'CENTER'),
+            ('GRID',          (0,0), (-1,-1), 0.5,
              colors.HexColor('#dddddd')),
-            ('TOPPADDING',   (0, 0), (-1, -1), 5),
-            ('BOTTOMPADDING',(0, 0), (-1, -1), 5),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1),
+            ('TOPPADDING',    (0,0), (-1,-1), 5),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+            ('ROWBACKGROUNDS',(0,1), (-1,-1),
              [colors.HexColor('#fff5f5'), colors.white]),
         ]))
         elements.append(blocked_table)
@@ -945,36 +1020,84 @@ def generate_report():
             'No IPs are currently blocked.', style_body))
 
     elements.append(Spacer(1, 0.2*inch))
-
-    # ── FOOTER LINE ───────────────────────────────────────────────
     elements.append(HRFlowable(
         width='100%', thickness=1,
         color=colors.HexColor('#cccccc')))
     elements.append(Spacer(1, 0.1*inch))
     elements.append(Paragraph(
         f'SecureWatch Security Monitoring System | '
-        f'Confidential Report | '
-        f'Generated {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}',
-        ParagraphStyle('Footer',
-                       parent=styles['Normal'],
-                       fontSize=7,
-                       textColor=colors.HexColor('#999999'),
-                       alignment=TA_CENTER)))
+        f'Confidential | '
+        f'Generated '
+        f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}',
+        ParagraphStyle(
+            'Footer', parent=styles['Normal'],
+            fontSize=7,
+            textColor=colors.HexColor('#999999'),
+            alignment=TA_CENTER)))
 
-    # ── BUILD PDF ─────────────────────────────────────────────────
     doc.build(elements)
     buffer.seek(0)
 
-    # ── Send as downloadable file ─────────────────────────────────
     filename = (f'SecureWatch_Report_'
                 f'{date_from}_to_{date_to}.pdf')
-
     response = make_response(buffer.read())
-    response.headers['Content-Type']        = 'application/pdf'
+    response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = \
         f'attachment; filename="{filename}"'
 
     return response
+
+# ═══════════════════════════════════════════════════════════════
+#  API — RECEIVE LOGS FROM AUTHORIZED WEB APP (PHASE 10)
+# ═══════════════════════════════════════════════════════════════
+
+@app.route('/api/logs', methods=['POST'])
+def api_receive_logs():
+    """
+    API endpoint that receives logs from the
+    authorized web app (Phase 10).
+    The web app sends logs here automatically.
+    """
+    # ── Check API key for security ───────────────────────────────
+    api_key = request.headers.get('X-API-Key', '')
+    if api_key != 'securewatch-api-key-2024':
+        return jsonify({
+            'error': 'Unauthorized'
+        }), 401
+
+    data = request.get_json()
+
+    if not data:
+        return jsonify({'error': 'No data received'}), 400
+
+    ip_address = data.get('ip_address', '').strip()
+    event_type = data.get('event_type', '').strip()
+    message    = data.get('message',    '').strip()
+    source     = data.get('source',     'webapp').strip()
+
+    if not ip_address or not event_type:
+        return jsonify({
+            'error': 'ip_address and event_type are required'
+        }), 400
+
+    db = get_db()
+    db.execute('''
+        INSERT INTO logs (ip_address, event_type, message, source)
+        VALUES (?, ?, ?, ?)
+    ''', (ip_address, event_type, message, source))
+    db.commit()
+    db.close()
+
+    # Run detection engine on the new log
+    try:
+        run_detection(ip_address, event_type)
+    except Exception as e:
+        print(f'Detection error: {e}')
+
+    return jsonify({
+        'status':  'success',
+        'message': 'Log received and processed'
+    }), 201
 
 # ═══════════════════════════════════════════════════════════════
 #  RUN APP
