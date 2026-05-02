@@ -193,38 +193,31 @@ def alerts():
 @app.route('/resolve-alert/<int:alert_id>', methods=['POST'])
 @login_required
 def resolve_alert(alert_id):
-    """Mark an alert as resolved."""
     db = get_db()
-    db.execute('''
-        UPDATE alerts SET status = 'resolved'
-        WHERE id = ?
-    ''', (alert_id,))
+    db.execute(
+        'UPDATE alerts SET status = "resolved" WHERE id = ?',
+        (alert_id,))
     db.commit()
     db.close()
     flash('✅ Alert marked as resolved.', 'success')
     return redirect(url_for('alerts'))
 
 
-# ── API: GET LATEST ALERT COUNT (for real-time notification) ─────
+# ── API: ALERT COUNT (for real-time popup) ───────────────────────
 @app.route('/api/alert-count')
 @login_required
 def api_alert_count():
-    """
-    Returns the current open alert count as JSON.
-    Called every 10 seconds by the browser to check for new alerts.
-    """
     db = get_db()
     count = db.execute(
         'SELECT COUNT(*) FROM alerts WHERE status = "open"'
     ).fetchone()[0]
 
-    # Get the most recent open alert for the popup message
     latest = db.execute('''
         SELECT alert_type, ip_address, severity
-        FROM alerts
-        WHERE status = 'open'
-        ORDER BY timestamp DESC
-        LIMIT 1
+        FROM   alerts
+        WHERE  status = 'open'
+        ORDER  BY timestamp DESC
+        LIMIT  1
     ''').fetchone()
 
     db.close()
@@ -270,10 +263,8 @@ def logs():
 
     query += ' ORDER BY timestamp DESC'
 
-    all_logs = db.execute(query, params).fetchall()
-
-    total_logs       = db.execute(
-        'SELECT COUNT(*) FROM logs').fetchone()[0]
+    all_logs         = db.execute(query, params).fetchall()
+    total_logs       = db.execute('SELECT COUNT(*) FROM logs').fetchone()[0]
     failed_count     = db.execute(
         'SELECT COUNT(*) FROM logs '
         'WHERE event_type = "failed_login"').fetchone()[0]
@@ -283,16 +274,13 @@ def logs():
     suspicious_count = db.execute(
         'SELECT COUNT(*) FROM logs '
         'WHERE event_type = "suspicious_activity"').fetchone()[0]
-
-    event_types = db.execute(
+    event_types      = db.execute(
         'SELECT DISTINCT event_type FROM logs ORDER BY event_type'
     ).fetchall()
-
-    alert_count = db.execute(
+    alert_count      = db.execute(
         'SELECT COUNT(*) FROM alerts WHERE status = "open"'
     ).fetchone()[0]
-
-    blocked_ip_list = [
+    blocked_ip_list  = [
         row['ip_address'] for row in
         db.execute('SELECT ip_address FROM blocked_ips').fetchall()
     ]
@@ -342,39 +330,61 @@ def upload_logs():
         count  = 0
         errors = 0
 
+        # ── STEP 1: Insert ALL logs first ────────────────────────
+        # Collect unique IPs and events for detection later
+        inserted = []
+
         for entry in data:
             try:
-                ip    = entry.get('ip_address', '0.0.0.0')
-                event = entry.get('event_type', 'unknown')
+                ip    = str(entry.get('ip_address', '0.0.0.0')).strip()
+                event = str(entry.get('event_type', 'unknown')).strip()
+                msg   = str(entry.get('message',    '')).strip()
+                src   = str(entry.get('source',     'uploaded')).strip()
 
                 db.execute('''
                     INSERT INTO logs (ip_address, event_type, message, source)
                     VALUES (?, ?, ?, ?)
-                ''', (
-                    ip,
-                    event,
-                    entry.get('message', ''),
-                    entry.get('source',  'uploaded'),
-                ))
+                ''', (ip, event, msg, src))
+
+                inserted.append((ip, event))
                 count += 1
 
-                # ── Run detection engine on every log ────────────
-                run_detection(ip, event)
-
-            except Exception:
+            except Exception as e:
+                print(f'Log insert error: {e}')
                 errors += 1
 
+        # ── STEP 2: Commit ALL logs to database FIRST ────────────
+        # Detection engine needs logs to be saved before it counts them
         db.commit()
         db.close()
 
+        # ── STEP 3: Run detection engine AFTER commit ────────────
+        # Now the logs are in the database and detection can find them
+        unique_pairs = list(set(inserted))
+        for ip, event in unique_pairs:
+            try:
+                run_detection(ip, event)
+            except Exception as e:
+                print(f'Detection error for {ip}: {e}')
+
+        # ── STEP 4: Count how many alerts were created ───────────
+        db2 = get_db()
+        new_alert_count = db2.execute(
+            'SELECT COUNT(*) FROM alerts WHERE status = "open"'
+        ).fetchone()[0]
+        db2.close()
+
+        # ── STEP 5: Show result message ──────────────────────────
         if errors:
             flash(
-                f'✅ {count} logs imported. ⚠️ {errors} entries skipped.',
+                f'✅ {count} logs imported. ⚠️ {errors} entries skipped. '
+                f'🚨 {new_alert_count} open alert(s) detected.',
                 'warning')
         else:
             flash(
-                f'✅ {count} logs imported! Detection engine has analyzed '
-                f'all entries.', 'success')
+                f'✅ {count} logs imported successfully! '
+                f'🚨 {new_alert_count} open alert(s) detected by engine.',
+                'success')
 
     except Exception as e:
         flash(f'❌ Error reading file: {str(e)}', 'danger')
@@ -411,15 +421,13 @@ def delete_all_logs():
 @login_required
 def block_ip_from_log():
     ip_address = request.form.get('ip_address', '').strip()
-    reason     = request.form.get('reason',
-                                  'Blocked from logs page').strip()
+    reason     = request.form.get('reason', 'Blocked from logs page').strip()
 
     if not ip_address:
         flash('No IP address provided.', 'danger')
         return redirect(url_for('logs'))
 
     db = get_db()
-
     already = db.execute(
         'SELECT id FROM blocked_ips WHERE ip_address = ?',
         (ip_address,)
