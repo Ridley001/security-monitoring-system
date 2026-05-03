@@ -138,6 +138,9 @@ def dashboard():
         'SELECT * FROM alerts '
         'ORDER BY timestamp DESC LIMIT 5').fetchall()
 
+    # ── Chart: Login activity last 7 days ────────────────────────
+    # Combines data from BOTH login_attempts table (admin logins)
+    # AND logs table (web app logins) so chart is always populated
     chart_labels  = []
     chart_success = []
     chart_failed  = []
@@ -149,22 +152,41 @@ def dashboard():
         ''', (i,)).fetchone()[0]
         chart_labels.append(day)
 
-        success = db.execute('''
+        # Successful logins — from admin login_attempts table
+        admin_success = db.execute('''
             SELECT COUNT(*) FROM login_attempts
             WHERE success = 1
             AND date(timestamp) =
             date('now', '-' || ? || ' days')
         ''', (i,)).fetchone()[0]
 
-        failed = db.execute('''
+        # Successful logins — from web app logs table
+        webapp_success = db.execute('''
+            SELECT COUNT(*) FROM logs
+            WHERE event_type = 'successful_login'
+            AND date(timestamp) =
+            date('now', '-' || ? || ' days')
+        ''', (i,)).fetchone()[0]
+
+        # Failed logins — from admin login_attempts table
+        admin_failed = db.execute('''
             SELECT COUNT(*) FROM login_attempts
             WHERE success = 0
             AND date(timestamp) =
             date('now', '-' || ? || ' days')
         ''', (i,)).fetchone()[0]
 
-        chart_success.append(success)
-        chart_failed.append(failed)
+        # Failed logins — from web app logs table
+        webapp_failed = db.execute('''
+            SELECT COUNT(*) FROM logs
+            WHERE event_type = 'failed_login'
+            AND date(timestamp) =
+            date('now', '-' || ? || ' days')
+        ''', (i,)).fetchone()[0]
+
+        # Combine both sources
+        chart_success.append(admin_success + webapp_success)
+        chart_failed.append(admin_failed  + webapp_failed)
 
     alert_type_rows = db.execute('''
         SELECT alert_type, COUNT(*) as cnt
@@ -347,7 +369,33 @@ def api_alert_count():
         'ip_address': latest['ip_address'] if latest else None,
         'severity':   latest['severity']   if latest else None,
     })
+# ── API: CHECK IF IP IS BLOCKED (used by web app) ────────────────
+@app.route('/api/is-blocked')
+def api_is_blocked():
+    """
+    Web app calls this to check if an IP is blocked
+    before allowing login.
+    """
+    api_key = request.headers.get('X-API-Key', '')
+    if api_key != 'securewatch-api-key-2024':
+        return jsonify({'error': 'Unauthorized'}), 401
 
+    ip = request.args.get('ip', '').strip()
+
+    if not ip:
+        return jsonify({'error': 'No IP provided'}), 400
+
+    db      = get_db()
+    blocked = db.execute(
+        'SELECT id FROM blocked_ips WHERE ip_address = ?',
+        (ip,)
+    ).fetchone()
+    db.close()
+
+    return jsonify({
+        'ip':      ip,
+        'blocked': blocked is not None
+    })
 # ═══════════════════════════════════════════════════════════════
 #  LOGS
 # ═══════════════════════════════════════════════════════════════
