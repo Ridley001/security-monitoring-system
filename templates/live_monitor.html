@@ -29,7 +29,7 @@
         MONITORED SYSTEMS:
     </span>
 
-    <!-- Main System -->
+    <!-- Main System — always online -->
     <div style="display:flex; align-items:center; gap:8px;">
         <span style="width:8px; height:8px;
                      background:#3fb950;
@@ -41,35 +41,33 @@
         </span>
     </div>
 
-    <!-- Web App -->
-    <div style="display:flex; align-items:center; gap:8px;"
-         id="webappStatus">
-        <span style="width:8px; height:8px;
+    <!-- Web App status -->
+    <div style="display:flex; align-items:center; gap:8px;">
+        <span id="webappDot"
+              style="width:8px; height:8px;
                      background:#8b949e;
                      border-radius:50%;
-                     display:inline-block;"
-              id="webappDot"></span>
-        <span style="font-size:13px; color:#8b949e;"
-              id="webappLabel">
+                     display:inline-block;"></span>
+        <span id="webappLabel"
+              style="font-size:13px; color:#8b949e;">
             Authorized WebApp
         </span>
     </div>
 
-    <!-- WordPress -->
-    <div style="display:flex; align-items:center; gap:8px;"
-         id="wpStatus">
-        <span style="width:8px; height:8px;
+    <!-- WordPress status -->
+    <div style="display:flex; align-items:center; gap:8px;">
+        <span id="wpDot"
+              style="width:8px; height:8px;
                      background:#8b949e;
                      border-radius:50%;
-                     display:inline-block;"
-              id="wpDot"></span>
-        <span style="font-size:13px; color:#8b949e;"
-              id="wpLabel">
+                     display:inline-block;"></span>
+        <span id="wpLabel"
+              style="font-size:13px; color:#8b949e;">
             ridleystore.kesug.com
         </span>
     </div>
 
-    <!-- Refresh indicator -->
+    <!-- Refresh controls -->
     <div style="margin-left:auto;
                 display:flex;
                 align-items:center;
@@ -91,6 +89,23 @@
         </button>
     </div>
 
+</div>
+
+<!-- ── NGROK / CONNECTION NOTICE ──────────────────────────── -->
+<div id="connectionNotice"
+     style="background:rgba(210,153,34,0.08);
+            border:1px solid rgba(210,153,34,0.25);
+            border-radius:10px;
+            padding:14px 20px;
+            margin-bottom:20px;
+            font-size:13px;
+            color:#d29922;
+            display:none;">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <strong>WordPress not sending logs yet.</strong>
+    Make sure your WordPress plugin is pointing to your
+    current public URL (ngrok or hosted URL).
+    Visit your WordPress site to generate logs.
 </div>
 
 <!-- ── LIVE STAT CARDS ────────────────────────────────────── -->
@@ -126,9 +141,7 @@
                 <i class="bi bi-slash-circle-fill"></i>
             </div>
             <div class="stat-info">
-                <h3 id="statBlocked">
-                    {{ total_blocked }}
-                </h3>
+                <h3 id="statBlocked">{{ total_blocked }}</h3>
                 <p>Blocked IPs</p>
             </div>
         </div>
@@ -141,9 +154,7 @@
             </div>
             <div class="stat-info">
                 <h3 style="font-size:16px;"
-                    id="statLastActivity">
-                    Live
-                </h3>
+                    id="statLastActivity">Live</h3>
                 <p>Last Activity</p>
             </div>
         </div>
@@ -163,26 +174,19 @@
     </span>
 
     <button onclick="setSource('')"
-            id="src-all"
-            class="src-btn active-src">
+            id="src-all" class="src-btn active-src">
         All Sources
     </button>
-
     <button onclick="setSource('authorized_webapp')"
-            id="src-webapp"
-            class="src-btn">
+            id="src-webapp" class="src-btn">
         <i class="bi bi-globe me-1"></i>WebApp
     </button>
-
     <button onclick="setSource('wordpress')"
-            id="src-wordpress"
-            class="src-btn">
+            id="src-wordpress" class="src-btn">
         <i class="bi bi-wordpress me-1"></i>WordPress
     </button>
-
     <button onclick="setSource('uploaded')"
-            id="src-uploaded"
-            class="src-btn">
+            id="src-uploaded" class="src-btn">
         <i class="bi bi-upload me-1"></i>Uploaded
     </button>
 
@@ -219,12 +223,9 @@
                 <span style="color:#8b949e;
                              font-size:12px;
                              font-weight:400;"
-                      id="logCount">
-                    Loading...
-                </span>
+                      id="logCount">Loading...</span>
             </div>
 
-            <!-- Log feed container -->
             <div id="logFeed"
                  style="height:500px;
                         overflow-y:auto;
@@ -236,10 +237,9 @@
                        style="font-size:32px;
                               display:block;
                               margin-bottom:10px;"></i>
-                    Waiting for live data...
+                    Connecting to live feed...
                 </div>
             </div>
-
         </div>
     </div>
 
@@ -282,10 +282,85 @@
                     No active alerts
                 </div>
             </div>
-
         </div>
     </div>
 
+</div>
+
+<!-- ── WORDPRESS SETUP GUIDE ──────────────────────────────── -->
+<div style="background:#161b22;
+            border:1px solid #30363d;
+            border-radius:14px;
+            padding:20px 24px;
+            margin-top:20px;">
+
+    <p style="color:#8b949e;
+              font-size:13px;
+              font-weight:600;
+              margin-bottom:12px;">
+        <i class="bi bi-wordpress text-info me-2"></i>
+        WordPress Integration Status
+    </p>
+
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div style="background:rgba(63,185,80,0.08);
+                        border:1px solid rgba(63,185,80,0.2);
+                        border-radius:8px;
+                        padding:12px;">
+                <div style="color:#3fb950;
+                            font-size:12px;
+                            font-weight:600;
+                            margin-bottom:4px;">
+                    ✅ Step 1 — Plugin Installed
+                </div>
+                <div style="color:#8b949e; font-size:11px;">
+                    SecureWatch Monitor plugin is active
+                    on ridleystore.kesug.com
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div id="step2box"
+                 style="background:rgba(210,153,34,0.08);
+                        border:1px solid rgba(210,153,34,0.2);
+                        border-radius:8px;
+                        padding:12px;">
+                <div style="color:#d29922;
+                            font-size:12px;
+                            font-weight:600;
+                            margin-bottom:4px;"
+                     id="step2title">
+                    ⚠️ Step 2 — Set Public URL
+                </div>
+                <div style="color:#8b949e; font-size:11px;"
+                     id="step2desc">
+                    Update plugin with your ngrok or
+                    hosted SecureWatch URL
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div id="step3box"
+                 style="background:rgba(88,166,255,0.08);
+                        border:1px solid rgba(88,166,255,0.2);
+                        border-radius:8px;
+                        padding:12px;">
+                <div style="color:#58a6ff;
+                            font-size:12px;
+                            font-weight:600;
+                            margin-bottom:4px;"
+                     id="step3title">
+                    ⏳ Step 3 — Visit Your Site
+                </div>
+                <div style="color:#8b949e; font-size:11px;"
+                     id="step3desc">
+                    Browse ridleystore.kesug.com to
+                    generate WordPress logs here
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 {% endblock %}
@@ -319,16 +394,12 @@
         display: flex;
         gap: 10px;
         align-items: flex-start;
-        transition: background 0.3s;
-    }
-    .log-entry:hover {
-        background: rgba(255,255,255,0.02);
     }
     .log-entry.new-entry {
-        animation: flashIn 0.5s ease;
+        animation: flashIn 0.6s ease;
     }
     @keyframes flashIn {
-        0%   { background: rgba(123,111,240,0.15); }
+        0%   { background: rgba(123,111,240,0.2); }
         100% { background: transparent; }
     }
     @keyframes pulse {
@@ -339,11 +410,34 @@
 
 <script>
 // ── State ─────────────────────────────────────────────────────
-let isRefreshing  = true;
-let refreshTimer  = null;
-let lastLogId     = 0;
-let currentSource = '';
-let knownSources  = new Set();
+let isRefreshing   = true;
+let refreshTimer   = null;
+let lastLogId      = 0;
+let currentSource  = '';
+let wpLogsReceived = false;
+let waLogsReceived = false;
+
+// ── Toggle pause/resume ───────────────────────────────────────
+function toggleRefresh() {
+    isRefreshing = !isRefreshing;
+    const btn    = document.getElementById('toggleBtn');
+    const status = document.getElementById('refreshStatus');
+    if (isRefreshing) {
+        btn.textContent      = '⏸ Pause';
+        btn.style.color      = '#3fb950';
+        btn.style.border     = '1px solid rgba(63,185,80,0.3)';
+        btn.style.background = 'rgba(63,185,80,0.1)';
+        status.textContent   = 'Auto-refresh: ON';
+        startRefresh();
+    } else {
+        btn.textContent      = '▶ Resume';
+        btn.style.color      = '#d29922';
+        btn.style.border     = '1px solid rgba(210,153,34,0.3)';
+        btn.style.background = 'rgba(210,153,34,0.1)';
+        status.textContent   = 'Auto-refresh: PAUSED';
+        if (refreshTimer) clearInterval(refreshTimer);
+    }
+}
 
 // ── Source filter ─────────────────────────────────────────────
 function setSource(src) {
@@ -357,111 +451,69 @@ function setSource(src) {
         'wordpress':         'src-wordpress',
         'uploaded':          'src-uploaded',
     };
-    const btn = document.getElementById(idMap[src] || 'src-all');
+    const btn = document.getElementById(
+        idMap[src] || 'src-all');
     if (btn) btn.classList.add('active-src');
 
-    // Reset and reload
+    // Reset feed and reload
     lastLogId = 0;
     document.getElementById('logFeed').innerHTML =
-        '<div style="text-align:center;padding:40px;color:#8b949e;">' +
-        '<i class="bi bi-hourglass-split" ' +
-        'style="font-size:32px;display:block;margin-bottom:10px;"></i>' +
-        'Loading...</div>';
+        '<div style="text-align:center;padding:40px;' +
+        'color:#8b949e;">Loading...</div>';
     fetchLogs();
-}
-
-// ── Toggle pause/resume ───────────────────────────────────────
-function toggleRefresh() {
-    isRefreshing = !isRefreshing;
-    const btn    = document.getElementById('toggleBtn');
-    const status = document.getElementById('refreshStatus');
-
-    if (isRefreshing) {
-        btn.textContent    = '⏸ Pause';
-        btn.style.color    = '#3fb950';
-        btn.style.border   = '1px solid rgba(63,185,80,0.3)';
-        btn.style.background = 'rgba(63,185,80,0.1)';
-        status.textContent = 'Auto-refresh: ON';
-        startRefresh();
-    } else {
-        btn.textContent    = '▶ Resume';
-        btn.style.color    = '#d29922';
-        btn.style.border   = '1px solid rgba(210,153,34,0.3)';
-        btn.style.background = 'rgba(210,153,34,0.1)';
-        status.textContent = 'Auto-refresh: PAUSED';
-        if (refreshTimer) clearInterval(refreshTimer);
-    }
 }
 
 // ── Event type badge ──────────────────────────────────────────
 function eventBadge(event_type) {
     const map = {
         'failed_login': {
-            bg: 'rgba(248,81,73,0.12)',
-            color: '#f85149',
-            border: 'rgba(248,81,73,0.25)',
-            icon: 'bi-x-circle-fill',
-            label: 'Failed Login'
+            bg:'rgba(248,81,73,0.12)', color:'#f85149',
+            border:'rgba(248,81,73,0.25)',
+            icon:'bi-x-circle-fill', label:'Failed Login'
         },
         'successful_login': {
-            bg: 'rgba(63,185,80,0.12)',
-            color: '#3fb950',
-            border: 'rgba(63,185,80,0.25)',
-            icon: 'bi-check-circle-fill',
-            label: 'Successful Login'
+            bg:'rgba(63,185,80,0.12)', color:'#3fb950',
+            border:'rgba(63,185,80,0.25)',
+            icon:'bi-check-circle-fill', label:'Successful Login'
         },
         'suspicious_activity': {
-            bg: 'rgba(210,153,34,0.12)',
-            color: '#d29922',
-            border: 'rgba(210,153,34,0.25)',
-            icon: 'bi-exclamation-triangle-fill',
-            label: 'Suspicious'
+            bg:'rgba(210,153,34,0.12)', color:'#d29922',
+            border:'rgba(210,153,34,0.25)',
+            icon:'bi-exclamation-triangle-fill',
+            label:'Suspicious'
         },
         'page_visit': {
-            bg: 'rgba(88,166,255,0.12)',
-            color: '#58a6ff',
-            border: 'rgba(88,166,255,0.25)',
-            icon: 'bi-eye-fill',
-            label: 'Page Visit'
+            bg:'rgba(88,166,255,0.12)', color:'#58a6ff',
+            border:'rgba(88,166,255,0.25)',
+            icon:'bi-eye-fill', label:'Page Visit'
         },
         'purchase': {
-            bg: 'rgba(63,185,80,0.12)',
-            color: '#3fb950',
-            border: 'rgba(63,185,80,0.25)',
-            icon: 'bi-cart-check-fill',
-            label: 'Purchase'
+            bg:'rgba(63,185,80,0.12)', color:'#3fb950',
+            border:'rgba(63,185,80,0.25)',
+            icon:'bi-cart-check-fill', label:'Purchase'
         },
         'add_to_cart': {
-            bg: 'rgba(123,111,240,0.12)',
-            color: '#a78bfa',
-            border: 'rgba(123,111,240,0.25)',
-            icon: 'bi-cart-plus-fill',
-            label: 'Add to Cart'
+            bg:'rgba(123,111,240,0.12)', color:'#a78bfa',
+            border:'rgba(123,111,240,0.25)',
+            icon:'bi-cart-plus-fill', label:'Add to Cart'
         },
         'blocked_access': {
-            bg: 'rgba(248,81,73,0.12)',
-            color: '#f85149',
-            border: 'rgba(248,81,73,0.25)',
-            icon: 'bi-slash-circle-fill',
-            label: 'Blocked Access'
+            bg:'rgba(248,81,73,0.12)', color:'#f85149',
+            border:'rgba(248,81,73,0.25)',
+            icon:'bi-slash-circle-fill', label:'Blocked'
         },
         'search': {
-            bg: 'rgba(88,166,255,0.12)',
-            color: '#58a6ff',
-            border: 'rgba(88,166,255,0.25)',
-            icon: 'bi-search',
-            label: 'Search'
+            bg:'rgba(88,166,255,0.12)', color:'#58a6ff',
+            border:'rgba(88,166,255,0.25)',
+            icon:'bi-search', label:'Search'
         },
     };
-
     const s = map[event_type] || {
-        bg: 'rgba(139,148,158,0.12)',
-        color: '#8b949e',
-        border: 'rgba(139,148,158,0.25)',
-        icon: 'bi-info-circle-fill',
+        bg:'rgba(139,148,158,0.12)', color:'#8b949e',
+        border:'rgba(139,148,158,0.25)',
+        icon:'bi-info-circle-fill',
         label: event_type.replace(/_/g,' ')
     };
-
     return `<span style="background:${s.bg};color:${s.color};
             border:1px solid ${s.border};padding:2px 8px;
             border-radius:5px;font-size:10px;font-weight:600;
@@ -473,159 +525,187 @@ function eventBadge(event_type) {
 // ── Source badge ──────────────────────────────────────────────
 function sourceBadge(source) {
     const map = {
-        'authorized_webapp': { color: '#58a6ff', icon: 'bi-globe' },
-        'wordpress':         { color: '#a78bfa', icon: 'bi-wordpress' },
-        'uploaded':          { color: '#8b949e', icon: 'bi-upload' },
-        'system':            { color: '#8b949e', icon: 'bi-cpu' },
+        'authorized_webapp':
+            { color:'#58a6ff', icon:'bi-globe' },
+        'wordpress':
+            { color:'#a78bfa', icon:'bi-wordpress' },
+        'uploaded':
+            { color:'#8b949e', icon:'bi-upload' },
+        'system':
+            { color:'#8b949e', icon:'bi-cpu' },
+        'external':
+            { color:'#d29922', icon:'bi-server' },
     };
     const s = map[source] || {
-        color: '#8b949e', icon: 'bi-server'
+        color:'#8b949e', icon:'bi-server'
     };
     return `<span style="background:rgba(255,255,255,0.05);
-            color:${s.color};border:1px solid rgba(255,255,255,0.08);
+            color:${s.color};
+            border:1px solid rgba(255,255,255,0.08);
             padding:2px 7px;border-radius:4px;font-size:10px;">
             <i class="bi ${s.icon} me-1"></i>${source}
             </span>`;
 }
 
-// ── Update system status dots ─────────────────────────────────
-function updateSourceStatus(sources) {
-    sources.forEach(s => knownSources.add(s.source));
+// ── Update system status dots based on received sources ───────
+function updateSourceStatus(logs) {
+    logs.forEach(function(log) {
+        // WebApp dot
+        if (log.source === 'authorized_webapp'
+            && !waLogsReceived) {
+            waLogsReceived = true;
+            const dot = document.getElementById('webappDot');
+            const lbl = document.getElementById('webappLabel');
+            dot.style.background  = '#3fb950';
+            dot.style.animation   = 'pulse 2s infinite';
+            lbl.style.color       = '#e6edf3';
+        }
+        // WordPress dot
+        if (log.source === 'wordpress'
+            && !wpLogsReceived) {
+            wpLogsReceived = true;
+            const dot = document.getElementById('wpDot');
+            const lbl = document.getElementById('wpLabel');
+            dot.style.background  = '#3fb950';
+            dot.style.animation   = 'pulse 2s infinite';
+            lbl.style.color       = '#e6edf3';
 
-    // Web app
-    if (knownSources.has('authorized_webapp')) {
-        document.getElementById('webappDot').style.background
-            = '#3fb950';
-        document.getElementById('webappDot').style.animation
-            = 'pulse 2s infinite';
-        document.getElementById('webappLabel').style.color
-            = '#e6edf3';
-    }
+            // Update step 2 and 3 boxes to green
+            const s2b = document.getElementById('step2box');
+            const s2t = document.getElementById('step2title');
+            const s2d = document.getElementById('step2desc');
+            if (s2b) {
+                s2b.style.background = 'rgba(63,185,80,0.08)';
+                s2b.style.border =
+                    '1px solid rgba(63,185,80,0.2)';
+            }
+            if (s2t) {
+                s2t.style.color = '#3fb950';
+                s2t.textContent = '✅ Step 2 — URL Configured';
+            }
+            if (s2d) {
+                s2d.textContent =
+                    'Plugin is successfully sending logs';
+            }
 
-    // WordPress
-    if (knownSources.has('wordpress')) {
-        document.getElementById('wpDot').style.background
-            = '#3fb950';
-        document.getElementById('wpDot').style.animation
-            = 'pulse 2s infinite';
-        document.getElementById('wpLabel').style.color
-            = '#e6edf3';
-    }
+            const s3b = document.getElementById('step3box');
+            const s3t = document.getElementById('step3title');
+            const s3d = document.getElementById('step3desc');
+            if (s3b) {
+                s3b.style.background = 'rgba(63,185,80,0.08)';
+                s3b.style.border =
+                    '1px solid rgba(63,185,80,0.2)';
+            }
+            if (s3t) {
+                s3t.style.color = '#3fb950';
+                s3t.textContent = '✅ Step 3 — Receiving Logs';
+            }
+            if (s3d) {
+                s3d.textContent =
+                    'WordPress activity is being tracked';
+            }
+
+            // Hide warning notice
+            const notice =
+                document.getElementById('connectionNotice');
+            if (notice) notice.style.display = 'none';
+        }
+    });
+
+    // Show notice if no WP logs after 15 seconds
+    setTimeout(function() {
+        if (!wpLogsReceived) {
+            const notice =
+                document.getElementById('connectionNotice');
+            if (notice) notice.style.display = 'block';
+        }
+    }, 15000);
 }
 
-// ── Render log entries ────────────────────────────────────────
-function renderLogs(logs, isNew) {
+// ── Build a log row HTML ──────────────────────────────────────
+function buildLogRow(log, isNew) {
+    const div = document.createElement('div');
+    div.className = isNew ? 'log-entry new-entry' : 'log-entry';
+    div.innerHTML = `
+        <div style="color:#484f58;
+                    min-width:32px;
+                    font-size:11px;">
+            #${log.id}
+        </div>
+        <div style="flex:1;">
+            <div style="display:flex;
+                        gap:6px;
+                        align-items:center;
+                        flex-wrap:wrap;
+                        margin-bottom:4px;">
+                <code style="color:#58a6ff; font-size:11px;">
+                    ${log.ip_address}
+                </code>
+                ${eventBadge(log.event_type)}
+                ${sourceBadge(log.source)}
+            </div>
+            <div style="color:#8b949e; font-size:11px;
+                        word-break:break-word;">
+                ${log.message || '—'}
+            </div>
+        </div>
+        <div style="color:#484f58;
+                    font-size:10px;
+                    white-space:nowrap;
+                    min-width:110px;
+                    text-align:right;">
+            ${String(log.timestamp).substring(0, 19)}
+        </div>
+    `;
+    return div;
+}
+
+// ── Render logs ───────────────────────────────────────────────
+function renderLogs(logs, isInitial) {
     const feed = document.getElementById('logFeed');
 
-    if (logs.length === 0 && lastLogId === 0) {
-        feed.innerHTML =
-            '<div style="text-align:center;padding:40px;' +
-            'color:#8b949e;">' +
-            '<i class="bi bi-inbox" style="font-size:32px;' +
-            'display:block;margin-bottom:10px;"></i>' +
-            'No logs yet — waiting for activity...</div>';
-        return;
-    }
-
-    if (logs.length === 0) return;
-
-    // Update last known ID
-    if (logs[0].id > lastLogId) lastLogId = logs[0].id;
-
-    if (isNew) {
-        // Prepend new logs at the top
-        logs.forEach(log => {
-            const div = document.createElement('div');
-            div.className = 'log-entry new-entry';
-            div.innerHTML = `
-                <div style="color:#484f58;
-                            min-width:30px;
-                            font-size:11px;">
-                    #${log.id}
-                </div>
-                <div style="flex:1;">
-                    <div style="display:flex;
-                                gap:6px;
-                                align-items:center;
-                                flex-wrap:wrap;
-                                margin-bottom:4px;">
-                        <code style="color:#58a6ff;
-                                     font-size:11px;">
-                            ${log.ip_address}
-                        </code>
-                        ${eventBadge(log.event_type)}
-                        ${sourceBadge(log.source)}
-                    </div>
-                    <div style="color:#8b949e; font-size:11px;">
-                        ${log.message || '—'}
-                    </div>
-                </div>
-                <div style="color:#484f58;
-                            font-size:10px;
-                            white-space:nowrap;
-                            min-width:120px;
-                            text-align:right;">
-                    ${log.timestamp}
-                </div>
-            `;
-            feed.insertBefore(div, feed.firstChild);
-        });
-
-        // Keep max 100 entries
-        while (feed.children.length > 100) {
-            feed.removeChild(feed.lastChild);
+    if (isInitial) {
+        if (logs.length === 0) {
+            feed.innerHTML =
+                '<div style="text-align:center;padding:40px;' +
+                'color:#8b949e;">' +
+                '<i class="bi bi-inbox" style="font-size:32px;' +
+                'display:block;margin-bottom:10px;"></i>' +
+                'No logs yet — waiting for activity...</div>';
+        } else {
+            feed.innerHTML = '';
+            logs.forEach(function(log) {
+                feed.appendChild(buildLogRow(log, false));
+            });
+            // Track highest ID
+            lastLogId = logs[0].id;
         }
-
     } else {
-        // Initial load — fill the feed
-        feed.innerHTML = '';
-        logs.forEach(log => {
-            const div = document.createElement('div');
-            div.className = 'log-entry';
-            div.innerHTML = `
-                <div style="color:#484f58;
-                            min-width:30px;
-                            font-size:11px;">
-                    #${log.id}
-                </div>
-                <div style="flex:1;">
-                    <div style="display:flex;
-                                gap:6px;
-                                align-items:center;
-                                flex-wrap:wrap;
-                                margin-bottom:4px;">
-                        <code style="color:#58a6ff;
-                                     font-size:11px;">
-                            ${log.ip_address}
-                        </code>
-                        ${eventBadge(log.event_type)}
-                        ${sourceBadge(log.source)}
-                    </div>
-                    <div style="color:#8b949e; font-size:11px;">
-                        ${log.message || '—'}
-                    </div>
-                </div>
-                <div style="color:#484f58;
-                            font-size:10px;
-                            white-space:nowrap;
-                            min-width:120px;
-                            text-align:right;">
-                    ${log.timestamp}
-                </div>
-            `;
-            feed.appendChild(div);
-        });
+        // New logs — prepend at top
+        if (logs.length > 0) {
+            logs.forEach(function(log) {
+                feed.insertBefore(
+                    buildLogRow(log, true),
+                    feed.firstChild
+                );
+                if (log.id > lastLogId) lastLogId = log.id;
+            });
+            // Trim to 100 entries
+            while (feed.children.length > 100) {
+                feed.removeChild(feed.lastChild);
+            }
+        }
     }
 
     document.getElementById('logCount').textContent =
-        `${feed.children.length} entries`;
+        feed.children.length + ' entries';
 }
 
-// ── Render alert feed ─────────────────────────────────────────
+// ── Render alerts ─────────────────────────────────────────────
 function renderAlerts(alerts) {
     const feed = document.getElementById('alertFeed');
 
-    if (alerts.length === 0) {
+    if (!alerts || alerts.length === 0) {
         feed.innerHTML =
             '<div style="text-align:center;padding:40px 20px;' +
             'color:#8b949e;">' +
@@ -636,26 +716,23 @@ function renderAlerts(alerts) {
     }
 
     feed.innerHTML = '';
-    alerts.forEach(alert => {
-        const colors = {
-            high:   { bg:'rgba(248,81,73,0.1)',
-                      border:'rgba(248,81,73,0.3)',
-                      color:'#f85149' },
-            medium: { bg:'rgba(210,153,34,0.1)',
-                      border:'rgba(210,153,34,0.3)',
-                      color:'#d29922' },
-            low:    { bg:'rgba(63,185,80,0.1)',
-                      border:'rgba(63,185,80,0.3)',
-                      color:'#3fb950' },
-        };
-        const c = colors[alert.severity] || colors.medium;
+    const colorMap = {
+        high:   {bg:'rgba(248,81,73,0.1)',
+                 border:'rgba(248,81,73,0.3)',  c:'#f85149'},
+        medium: {bg:'rgba(210,153,34,0.1)',
+                 border:'rgba(210,153,34,0.3)', c:'#d29922'},
+        low:    {bg:'rgba(63,185,80,0.1)',
+                 border:'rgba(63,185,80,0.3)',  c:'#3fb950'},
+    };
 
+    alerts.forEach(function(alert) {
+        const col = colorMap[alert.severity] || colorMap.medium;
         const div = document.createElement('div');
         div.style.cssText =
-            `background:${c.bg};border:1px solid ${c.border};` +
+            `background:${col.bg};border:1px solid ${col.border};` +
             `border-radius:8px;padding:12px;margin-bottom:8px;`;
         div.innerHTML = `
-            <div style="color:${c.color};font-weight:600;
+            <div style="color:${col.c};font-weight:600;
                         font-size:12px;margin-bottom:4px;">
                 🚨 ${alert.alert_type}
             </div>
@@ -667,42 +744,42 @@ function renderAlerts(alerts) {
             </div>
             <div style="color:#484f58;font-size:10px;
                         margin-top:4px;">
-                ${alert.timestamp}
+                ${String(alert.timestamp).substring(0,19)}
             </div>
         `;
         feed.appendChild(div);
     });
 }
 
-// ── Main fetch function ───────────────────────────────────────
+// ── Main fetch ────────────────────────────────────────────────
 function fetchLogs() {
-    let url = `/api/live-logs?`;
-    if (currentSource) url += `source=${currentSource}&`;
-
     const isInitial = lastLogId === 0;
-    if (!isInitial) url += `since=${lastLogId}`;
+    let url = '/api/live-logs?';
+    if (currentSource) url += 'source=' + currentSource + '&';
+    if (!isInitial)    url += 'since=' + lastLogId;
 
     fetch(url)
-        .then(r => r.json())
-        .then(data => {
-            renderLogs(data.logs, !isInitial);
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            renderLogs(data.logs, isInitial);
             renderAlerts(data.alerts);
             updateSourceStatus(data.logs);
 
-            // Update stat counters
             document.getElementById('statTodayEvents')
                 .textContent = data.today_events;
             document.getElementById('statThreats')
                 .textContent = data.today_threats;
         })
-        .catch(err => console.log('Fetch error:', err));
+        .catch(function(err) {
+            console.log('Fetch error:', err);
+        });
 }
 
-// ── Fetch stats only (lightweight) ───────────────────────────
+// ── Fetch stats ───────────────────────────────────────────────
 function fetchStats() {
     fetch('/api/live-stats')
-        .then(r => r.json())
-        .then(data => {
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
             document.getElementById('statTodayEvents')
                 .textContent = data.today_events;
             document.getElementById('statThreats')
@@ -711,24 +788,26 @@ function fetchStats() {
                 .textContent = data.total_blocked;
 
             const t = data.last_activity;
-            document.getElementById('statLastActivity')
-                .textContent = t
-                    ? t.toString().substring(11, 19)
-                    : 'None';
+            if (t && t !== 'No activity yet') {
+                document.getElementById('statLastActivity')
+                    .textContent = String(t).substring(11, 19);
+            }
         })
-        .catch(err => console.log('Stats error:', err));
+        .catch(function(err) {
+            console.log('Stats error:', err);
+        });
 }
 
-// ── Start auto-refresh ────────────────────────────────────────
+// ── Start polling ─────────────────────────────────────────────
 function startRefresh() {
     if (refreshTimer) clearInterval(refreshTimer);
     refreshTimer = setInterval(function() {
         fetchLogs();
         fetchStats();
-    }, 3000); // Every 3 seconds
+    }, 3000);
 }
 
-// ── Initialize ────────────────────────────────────────────────
+// ── Boot ──────────────────────────────────────────────────────
 fetchLogs();
 fetchStats();
 startRefresh();
