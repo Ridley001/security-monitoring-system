@@ -15,6 +15,7 @@ def run_detection(ip_address, event_type):
     check_brute_force(ip_address)
     check_blocked_ip_activity(ip_address)
     check_suspicious_activity(ip_address, event_type)
+    check_wordpress_brute_force(ip_address)
 
 
 # ── RULE 1: BRUTE FORCE DETECTION ───────────────────────────────
@@ -141,5 +142,49 @@ def check_suspicious_activity(ip_address, event_type):
         ))
         db.commit()
         print(f'⚠️  ALERT: Suspicious activity from {ip_address}')
+
+    db.close()
+
+# ── RULE 4: MULTIPLE FAILED LOGINS FROM WORDPRESS ────────────────
+def check_wordpress_brute_force(ip_address):
+    """
+    Same as brute force but specifically checks
+    for WordPress login attacks.
+    """
+    db = get_db()
+
+    count = db.execute('''
+        SELECT COUNT(*) FROM logs
+        WHERE ip_address = ?
+        AND   event_type = 'failed_login'
+        AND   source     = 'wordpress'
+        AND   timestamp >= datetime('now', '-60 seconds')
+    ''', (ip_address,)).fetchone()[0]
+
+    if count >= 3:
+        existing = db.execute('''
+            SELECT id FROM alerts
+            WHERE ip_address = ?
+            AND   alert_type = 'WordPress Brute Force'
+            AND   status     = 'open'
+            AND   timestamp >= datetime('now', '-60 seconds')
+        ''', (ip_address,)).fetchone()
+
+        if not existing:
+            db.execute('''
+                INSERT INTO alerts
+                    (ip_address, alert_type,
+                     description, severity, status)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (
+                ip_address,
+                'WordPress Brute Force',
+                f'IP {ip_address} made {count} failed '
+                f'WordPress login attempts in 60 seconds.',
+                'high',
+                'open'
+            ))
+            db.commit()
+            print(f'🚨 WordPress Brute Force from {ip_address}')
 
     db.close()

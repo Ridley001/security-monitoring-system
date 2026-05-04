@@ -345,6 +345,7 @@ def block_ip_from_alert():
     return redirect(url_for('alerts'))
 
 
+# ── API: ALERT COUNT (for real-time popup) ───────────────────────
 @app.route('/api/alert-count')
 @login_required
 def api_alert_count():
@@ -369,6 +370,8 @@ def api_alert_count():
         'ip_address': latest['ip_address'] if latest else None,
         'severity':   latest['severity']   if latest else None,
     })
+
+
 # ── API: CHECK IF IP IS BLOCKED (used by web app) ────────────────
 @app.route('/api/is-blocked')
 def api_is_blocked():
@@ -396,6 +399,7 @@ def api_is_blocked():
         'ip':      ip,
         'blocked': blocked is not None
     })
+
 # ═══════════════════════════════════════════════════════════════
 #  LOGS
 # ═══════════════════════════════════════════════════════════════
@@ -616,16 +620,14 @@ def block_ip_from_log():
     return redirect(url_for('logs'))
 
 # ═══════════════════════════════════════════════════════════════
-#  BLOCKED IPs  —  PHASE 9 UPGRADES
+#  BLOCKED IPs
 # ═══════════════════════════════════════════════════════════════
 
 @app.route('/blocked')
 @login_required
 def blocked():
-    """Blocked IPs page with search and manual block."""
     db = get_db()
 
-    # ── Search filter ────────────────────────────────────────────
     search = request.args.get('search', '').strip()
 
     if search:
@@ -681,7 +683,6 @@ def unblock_ip(ip_id):
 @app.route('/manual-block', methods=['POST'])
 @login_required
 def manual_block():
-    """Manually block any IP address the admin types in."""
     ip_address = request.form.get('ip_address', '').strip()
     reason     = request.form.get(
         'reason', 'Manually blocked by admin').strip()
@@ -690,7 +691,6 @@ def manual_block():
         flash('Please enter an IP address.', 'danger')
         return redirect(url_for('blocked'))
 
-    # Basic IP format validation
     parts = ip_address.split('.')
     if len(parts) != 4:
         flash(
@@ -726,58 +726,182 @@ def manual_block():
 @app.route('/view-ip-logs/<ip_address>')
 @login_required
 def view_ip_logs(ip_address):
-    """
-    Redirect to logs page filtered by this specific IP.
-    Lets admin see all activity from a blocked IP.
-    """
     return redirect(url_for('logs', search=ip_address))
 
 # ═══════════════════════════════════════════════════════════════
-#  LIVE MONITOR
+#  LIVE MONITOR  —  PHASE 11
 # ═══════════════════════════════════════════════════════════════
 
 @app.route('/live-monitor')
 @login_required
 def live_monitor():
+    """
+    Live monitoring page.
+    Shows real-time activity from all connected systems:
+    - Authorized WebApp
+    - WordPress site (ridleystore.kesug.com)
+    - Any other connected source
+    """
     db = get_db()
+
     alert_count = db.execute(
         'SELECT COUNT(*) FROM alerts '
         'WHERE status = "open"').fetchone()[0]
 
-    # Get recent logs for live display
-    recent_logs = db.execute(
-        'SELECT * FROM logs '
-        'ORDER BY timestamp DESC LIMIT 20').fetchall()
+    # ── Stats for live monitor page ──────────────────────────────
+    today_events = db.execute('''
+        SELECT COUNT(*) FROM logs
+        WHERE date(timestamp) = date('now')
+    ''').fetchone()[0]
+
+    today_threats = db.execute('''
+        SELECT COUNT(*) FROM alerts
+        WHERE date(timestamp) = date('now')
+        AND   status = 'open'
+    ''').fetchone()[0]
+
+    total_blocked = db.execute(
+        'SELECT COUNT(*) FROM blocked_ips'
+    ).fetchone()[0]
+
+
+
+    # ── Distinct sources currently in logs ───────────────────────
+    sources = db.execute('''
+        SELECT DISTINCT source FROM logs
+        WHERE  source IS NOT NULL
+        ORDER  BY source
+    ''').fetchall()
 
     db.close()
+
     return render_template('live_monitor.html',
                            alert_count=alert_count,
-                           recent_logs=recent_logs)
+                           today_events=today_events,
+                           today_threats=today_threats,
+                           total_blocked=total_blocked,
+                           sources=sources)
 
 
-# ── API: Live logs for auto-refresh ─────────────────────────────
+# ── API: Live logs feed ──────────────────────────────────────────
 @app.route('/api/live-logs')
 @login_required
 def api_live_logs():
-    """Returns latest 20 logs as JSON for live monitor page."""
+    """
+    Returns latest logs as JSON.
+    Called every 3 seconds by live monitor page.
+    Supports optional ?source= and ?since= filters.
+    """
+    source = request.args.get('source', '').strip()
+    since  = request.args.get('since',  '').strip()
+
+    query  = 'SELECT * FROM logs WHERE 1=1'
+    params = []
+
+    if source:
+        query += ' AND source = ?'
+        params.append(source)
+
+    if since:
+        query += ' AND id > ?'
+        params.append(since)
+
+    query += ' ORDER BY timestamp DESC LIMIT 50'
+
     db   = get_db()
-    rows = db.execute(
-        'SELECT * FROM logs ORDER BY timestamp DESC LIMIT 20'
-    ).fetchall()
+    rows = db.execute(query, params).fetchall()
+
+    # Latest open alerts for alert feed panel
+    alerts = db.execute('''
+        SELECT * FROM alerts
+        WHERE  status = 'open'
+        ORDER  BY timestamp DESC
+        LIMIT  5
+    ''').fetchall()
+
+    # Today stats
+    today_events = db.execute('''
+        SELECT COUNT(*) FROM logs
+        WHERE date(timestamp) = date('now')
+    ''').fetchone()[0]
+
+    today_threats = db.execute('''
+        SELECT COUNT(*) FROM alerts
+        WHERE date(timestamp) = date('now')
+        AND   status = 'open'
+    ''').fetchone()[0]
+
     db.close()
 
-    logs = []
+    logs_list = []
     for r in rows:
-        logs.append({
+        logs_list.append({
             'id':         r['id'],
             'ip_address': r['ip_address'],
             'event_type': r['event_type'],
-            'message':    r['message'],
-            'source':     r['source'],
+            'message':    r['message']    or '',
+            'source':     r['source']     or 'unknown',
             'timestamp':  r['timestamp'],
         })
 
-    return jsonify(logs)
+    alerts_list = []
+    for a in alerts:
+        alerts_list.append({
+            'id':         a['id'],
+            'ip_address': a['ip_address'],
+            'alert_type': a['alert_type'],
+            'severity':   a['severity'],
+            'timestamp':  a['timestamp'],
+        })
+
+    return jsonify({
+        'logs':          logs_list,
+        'alerts':        alerts_list,
+        'today_events':  today_events,
+        'today_threats': today_threats,
+    })
+
+
+# ── API: Live stats only (lightweight poll) ──────────────────────
+@app.route('/api/live-stats')
+@login_required
+def api_live_stats():
+    """
+    Lightweight endpoint — returns counters only.
+    Called every 3 seconds alongside live-logs.
+    """
+    db = get_db()
+
+    today_events = db.execute('''
+        SELECT COUNT(*) FROM logs
+        WHERE date(timestamp) = date('now')
+    ''').fetchone()[0]
+
+    today_threats = db.execute('''
+        SELECT COUNT(*) FROM alerts
+        WHERE date(timestamp) = date('now')
+        AND   status = 'open'
+    ''').fetchone()[0]
+
+    total_blocked = db.execute(
+        'SELECT COUNT(*) FROM blocked_ips'
+    ).fetchone()[0]
+
+    latest_log = db.execute('''
+        SELECT timestamp FROM logs
+        ORDER  BY timestamp DESC
+        LIMIT  1
+    ''').fetchone()
+
+    db.close()
+
+    return jsonify({
+        'today_events':  today_events,
+        'today_threats': today_threats,
+        'total_blocked': total_blocked,
+        'last_activity': latest_log['timestamp']
+                         if latest_log else 'No activity yet',
+    })
 
 # ═══════════════════════════════════════════════════════════════
 #  REPORTS
@@ -1096,22 +1220,20 @@ def generate_report():
     return response
 
 # ═══════════════════════════════════════════════════════════════
-#  API — RECEIVE LOGS FROM AUTHORIZED WEB APP (PHASE 10)
+#  API — RECEIVE LOGS FROM EXTERNAL SOURCES
+#  Used by: Authorized WebApp, WordPress plugin, any future source
 # ═══════════════════════════════════════════════════════════════
 
 @app.route('/api/logs', methods=['POST'])
 def api_receive_logs():
     """
-    API endpoint that receives logs from the
-    authorized web app (Phase 10).
-    The web app sends logs here automatically.
+    Main API endpoint that receives logs from any
+    connected system — webapp, WordPress, etc.
+    Requires X-API-Key header for security.
     """
-    # ── Check API key for security ───────────────────────────────
     api_key = request.headers.get('X-API-Key', '')
     if api_key != 'securewatch-api-key-2024':
-        return jsonify({
-            'error': 'Unauthorized'
-        }), 401
+        return jsonify({'error': 'Unauthorized'}), 401
 
     data = request.get_json()
 
@@ -1121,7 +1243,7 @@ def api_receive_logs():
     ip_address = data.get('ip_address', '').strip()
     event_type = data.get('event_type', '').strip()
     message    = data.get('message',    '').strip()
-    source     = data.get('source',     'webapp').strip()
+    source     = data.get('source',     'external').strip()
 
     if not ip_address or not event_type:
         return jsonify({
@@ -1136,7 +1258,7 @@ def api_receive_logs():
     db.commit()
     db.close()
 
-    # Run detection engine on the new log
+    # Run detection engine on every incoming log
     try:
         run_detection(ip_address, event_type)
     except Exception as e:

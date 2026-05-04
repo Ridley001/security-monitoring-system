@@ -1,19 +1,736 @@
 {% extends "base.html" %}
 {% block title %}Live Monitor{% endblock %}
+
 {% block page_title %}
-    <i class="bi bi-activity me-2"></i>Live Monitor
+    <i class="bi bi-activity me-2"></i>Live Security Monitor
 {% endblock %}
+
 {% block content %}
+
 <div class="page-heading">
     <h4>Live Security Monitoring</h4>
-    <p>Real-time incident response and monitoring</p>
+    <p>Real-time activity feed from all connected systems</p>
 </div>
-<div class="dark-card">
-    <div class="card-body">
-        <div class="empty-state" style="padding: 60px">
-            <i class="bi bi-activity text-info"></i>
-            <p>Live monitoring will be built in Phase 12</p>
+
+<!-- ── SYSTEM STATUS BAR ──────────────────────────────────── -->
+<div style="background:#161b22;
+            border:1px solid #30363d;
+            border-radius:14px;
+            padding:16px 24px;
+            margin-bottom:20px;
+            display:flex;
+            align-items:center;
+            gap:24px;
+            flex-wrap:wrap;">
+
+    <span style="color:#8b949e;
+                 font-size:13px;
+                 font-weight:600;">
+        MONITORED SYSTEMS:
+    </span>
+
+    <!-- Main System -->
+    <div style="display:flex; align-items:center; gap:8px;">
+        <span style="width:8px; height:8px;
+                     background:#3fb950;
+                     border-radius:50%;
+                     display:inline-block;
+                     animation:pulse 2s infinite;"></span>
+        <span style="font-size:13px; color:#e6edf3;">
+            SecureWatch Main
+        </span>
+    </div>
+
+    <!-- Web App -->
+    <div style="display:flex; align-items:center; gap:8px;"
+         id="webappStatus">
+        <span style="width:8px; height:8px;
+                     background:#8b949e;
+                     border-radius:50%;
+                     display:inline-block;"
+              id="webappDot"></span>
+        <span style="font-size:13px; color:#8b949e;"
+              id="webappLabel">
+            Authorized WebApp
+        </span>
+    </div>
+
+    <!-- WordPress -->
+    <div style="display:flex; align-items:center; gap:8px;"
+         id="wpStatus">
+        <span style="width:8px; height:8px;
+                     background:#8b949e;
+                     border-radius:50%;
+                     display:inline-block;"
+              id="wpDot"></span>
+        <span style="font-size:13px; color:#8b949e;"
+              id="wpLabel">
+            ridleystore.kesug.com
+        </span>
+    </div>
+
+    <!-- Refresh indicator -->
+    <div style="margin-left:auto;
+                display:flex;
+                align-items:center;
+                gap:8px;">
+        <span style="font-size:12px; color:#8b949e;"
+              id="refreshStatus">
+            Auto-refresh: ON
+        </span>
+        <button onclick="toggleRefresh()"
+                id="toggleBtn"
+                style="background:rgba(63,185,80,0.1);
+                       color:#3fb950;
+                       border:1px solid rgba(63,185,80,0.3);
+                       border-radius:6px;
+                       padding:4px 12px;
+                       cursor:pointer;
+                       font-size:12px;">
+            ⏸ Pause
+        </button>
+    </div>
+
+</div>
+
+<!-- ── LIVE STAT CARDS ────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon blue">
+                <i class="bi bi-activity"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="statTodayEvents">{{ today_events }}</h3>
+                <p>Events Today</p>
+            </div>
         </div>
     </div>
+
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon red">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="statThreats">{{ today_threats }}</h3>
+                <p>Threats Today</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon yellow">
+                <i class="bi bi-slash-circle-fill"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="statBlocked">
+                    {{ total_blocked }}
+                </h3>
+                <p>Blocked IPs</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon green">
+                <i class="bi bi-clock-history"></i>
+            </div>
+            <div class="stat-info">
+                <h3 style="font-size:16px;"
+                    id="statLastActivity">
+                    Live
+                </h3>
+                <p>Last Activity</p>
+            </div>
+        </div>
+    </div>
+
 </div>
+
+<!-- ── SOURCE FILTER ──────────────────────────────────────── -->
+<div style="display:flex;
+            gap:8px;
+            margin-bottom:16px;
+            flex-wrap:wrap;
+            align-items:center;">
+
+    <span style="color:#8b949e; font-size:13px;">
+        Filter by source:
+    </span>
+
+    <button onclick="setSource('')"
+            id="src-all"
+            class="src-btn active-src">
+        All Sources
+    </button>
+
+    <button onclick="setSource('authorized_webapp')"
+            id="src-webapp"
+            class="src-btn">
+        <i class="bi bi-globe me-1"></i>WebApp
+    </button>
+
+    <button onclick="setSource('wordpress')"
+            id="src-wordpress"
+            class="src-btn">
+        <i class="bi bi-wordpress me-1"></i>WordPress
+    </button>
+
+    <button onclick="setSource('uploaded')"
+            id="src-uploaded"
+            class="src-btn">
+        <i class="bi bi-upload me-1"></i>Uploaded
+    </button>
+
+</div>
+
+<!-- ── MAIN CONTENT: LOGS + ALERTS ───────────────────────── -->
+<div class="row g-4">
+
+    <!-- Live Log Feed -->
+    <div class="col-md-8">
+        <div style="background:#161b22;
+                    border:1px solid #30363d;
+                    border-radius:14px;">
+
+            <div style="background:#1c2128;
+                        border-bottom:1px solid #30363d;
+                        padding:14px 20px;
+                        border-radius:14px 14px 0 0;
+                        display:flex;
+                        align-items:center;
+                        justify-content:space-between;
+                        font-weight:600;
+                        font-size:14px;">
+                <span>
+                    <span style="width:8px; height:8px;
+                                 background:#3fb950;
+                                 border-radius:50%;
+                                 display:inline-block;
+                                 margin-right:8px;
+                                 animation:pulse 2s infinite;">
+                    </span>
+                    Live Log Feed
+                </span>
+                <span style="color:#8b949e;
+                             font-size:12px;
+                             font-weight:400;"
+                      id="logCount">
+                    Loading...
+                </span>
+            </div>
+
+            <!-- Log feed container -->
+            <div id="logFeed"
+                 style="height:500px;
+                        overflow-y:auto;
+                        padding:8px 0;">
+                <div style="text-align:center;
+                            padding:40px;
+                            color:#8b949e;">
+                    <i class="bi bi-hourglass-split"
+                       style="font-size:32px;
+                              display:block;
+                              margin-bottom:10px;"></i>
+                    Waiting for live data...
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Live Alert Feed -->
+    <div class="col-md-4">
+        <div style="background:#161b22;
+                    border:1px solid #30363d;
+                    border-radius:14px;">
+
+            <div style="background:#1c2128;
+                        border-bottom:1px solid #30363d;
+                        padding:14px 20px;
+                        border-radius:14px 14px 0 0;
+                        font-weight:600;
+                        font-size:14px;">
+                <span>
+                    <span style="width:8px; height:8px;
+                                 background:#f85149;
+                                 border-radius:50%;
+                                 display:inline-block;
+                                 margin-right:8px;
+                                 animation:pulse 2s infinite;">
+                    </span>
+                    Live Alerts
+                </span>
+            </div>
+
+            <div id="alertFeed"
+                 style="height:500px;
+                        overflow-y:auto;
+                        padding:12px;">
+                <div style="text-align:center;
+                            padding:40px 20px;
+                            color:#8b949e;">
+                    <i class="bi bi-shield-check"
+                       style="font-size:32px;
+                              color:#3fb950;
+                              display:block;
+                              margin-bottom:10px;"></i>
+                    No active alerts
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<style>
+    .src-btn {
+        background: rgba(255,255,255,0.05);
+        color: #8b949e;
+        border: 1px solid #30363d;
+        border-radius: 6px;
+        padding: 4px 14px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.2s;
+    }
+    .src-btn:hover {
+        background: rgba(123,111,240,0.1);
+        color: #a78bfa;
+        border-color: rgba(123,111,240,0.3);
+    }
+    .active-src {
+        background: rgba(123,111,240,0.15) !important;
+        color: #a78bfa !important;
+        border-color: rgba(123,111,240,0.4) !important;
+    }
+    .log-entry {
+        padding: 10px 16px;
+        border-bottom: 1px solid #21262d;
+        font-size: 12px;
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        transition: background 0.3s;
+    }
+    .log-entry:hover {
+        background: rgba(255,255,255,0.02);
+    }
+    .log-entry.new-entry {
+        animation: flashIn 0.5s ease;
+    }
+    @keyframes flashIn {
+        0%   { background: rgba(123,111,240,0.15); }
+        100% { background: transparent; }
+    }
+    @keyframes pulse {
+        0%,100% { opacity:1; }
+        50%     { opacity:0.3; }
+    }
+</style>
+
+<script>
+// ── State ─────────────────────────────────────────────────────
+let isRefreshing  = true;
+let refreshTimer  = null;
+let lastLogId     = 0;
+let currentSource = '';
+let knownSources  = new Set();
+
+// ── Source filter ─────────────────────────────────────────────
+function setSource(src) {
+    currentSource = src;
+    document.querySelectorAll('.src-btn').forEach(b => {
+        b.classList.remove('active-src');
+    });
+    const idMap = {
+        '':                  'src-all',
+        'authorized_webapp': 'src-webapp',
+        'wordpress':         'src-wordpress',
+        'uploaded':          'src-uploaded',
+    };
+    const btn = document.getElementById(idMap[src] || 'src-all');
+    if (btn) btn.classList.add('active-src');
+
+    // Reset and reload
+    lastLogId = 0;
+    document.getElementById('logFeed').innerHTML =
+        '<div style="text-align:center;padding:40px;color:#8b949e;">' +
+        '<i class="bi bi-hourglass-split" ' +
+        'style="font-size:32px;display:block;margin-bottom:10px;"></i>' +
+        'Loading...</div>';
+    fetchLogs();
+}
+
+// ── Toggle pause/resume ───────────────────────────────────────
+function toggleRefresh() {
+    isRefreshing = !isRefreshing;
+    const btn    = document.getElementById('toggleBtn');
+    const status = document.getElementById('refreshStatus');
+
+    if (isRefreshing) {
+        btn.textContent    = '⏸ Pause';
+        btn.style.color    = '#3fb950';
+        btn.style.border   = '1px solid rgba(63,185,80,0.3)';
+        btn.style.background = 'rgba(63,185,80,0.1)';
+        status.textContent = 'Auto-refresh: ON';
+        startRefresh();
+    } else {
+        btn.textContent    = '▶ Resume';
+        btn.style.color    = '#d29922';
+        btn.style.border   = '1px solid rgba(210,153,34,0.3)';
+        btn.style.background = 'rgba(210,153,34,0.1)';
+        status.textContent = 'Auto-refresh: PAUSED';
+        if (refreshTimer) clearInterval(refreshTimer);
+    }
+}
+
+// ── Event type badge ──────────────────────────────────────────
+function eventBadge(event_type) {
+    const map = {
+        'failed_login': {
+            bg: 'rgba(248,81,73,0.12)',
+            color: '#f85149',
+            border: 'rgba(248,81,73,0.25)',
+            icon: 'bi-x-circle-fill',
+            label: 'Failed Login'
+        },
+        'successful_login': {
+            bg: 'rgba(63,185,80,0.12)',
+            color: '#3fb950',
+            border: 'rgba(63,185,80,0.25)',
+            icon: 'bi-check-circle-fill',
+            label: 'Successful Login'
+        },
+        'suspicious_activity': {
+            bg: 'rgba(210,153,34,0.12)',
+            color: '#d29922',
+            border: 'rgba(210,153,34,0.25)',
+            icon: 'bi-exclamation-triangle-fill',
+            label: 'Suspicious'
+        },
+        'page_visit': {
+            bg: 'rgba(88,166,255,0.12)',
+            color: '#58a6ff',
+            border: 'rgba(88,166,255,0.25)',
+            icon: 'bi-eye-fill',
+            label: 'Page Visit'
+        },
+        'purchase': {
+            bg: 'rgba(63,185,80,0.12)',
+            color: '#3fb950',
+            border: 'rgba(63,185,80,0.25)',
+            icon: 'bi-cart-check-fill',
+            label: 'Purchase'
+        },
+        'add_to_cart': {
+            bg: 'rgba(123,111,240,0.12)',
+            color: '#a78bfa',
+            border: 'rgba(123,111,240,0.25)',
+            icon: 'bi-cart-plus-fill',
+            label: 'Add to Cart'
+        },
+        'blocked_access': {
+            bg: 'rgba(248,81,73,0.12)',
+            color: '#f85149',
+            border: 'rgba(248,81,73,0.25)',
+            icon: 'bi-slash-circle-fill',
+            label: 'Blocked Access'
+        },
+        'search': {
+            bg: 'rgba(88,166,255,0.12)',
+            color: '#58a6ff',
+            border: 'rgba(88,166,255,0.25)',
+            icon: 'bi-search',
+            label: 'Search'
+        },
+    };
+
+    const s = map[event_type] || {
+        bg: 'rgba(139,148,158,0.12)',
+        color: '#8b949e',
+        border: 'rgba(139,148,158,0.25)',
+        icon: 'bi-info-circle-fill',
+        label: event_type.replace(/_/g,' ')
+    };
+
+    return `<span style="background:${s.bg};color:${s.color};
+            border:1px solid ${s.border};padding:2px 8px;
+            border-radius:5px;font-size:10px;font-weight:600;
+            white-space:nowrap;">
+            <i class="bi ${s.icon} me-1"></i>${s.label}
+            </span>`;
+}
+
+// ── Source badge ──────────────────────────────────────────────
+function sourceBadge(source) {
+    const map = {
+        'authorized_webapp': { color: '#58a6ff', icon: 'bi-globe' },
+        'wordpress':         { color: '#a78bfa', icon: 'bi-wordpress' },
+        'uploaded':          { color: '#8b949e', icon: 'bi-upload' },
+        'system':            { color: '#8b949e', icon: 'bi-cpu' },
+    };
+    const s = map[source] || {
+        color: '#8b949e', icon: 'bi-server'
+    };
+    return `<span style="background:rgba(255,255,255,0.05);
+            color:${s.color};border:1px solid rgba(255,255,255,0.08);
+            padding:2px 7px;border-radius:4px;font-size:10px;">
+            <i class="bi ${s.icon} me-1"></i>${source}
+            </span>`;
+}
+
+// ── Update system status dots ─────────────────────────────────
+function updateSourceStatus(sources) {
+    sources.forEach(s => knownSources.add(s.source));
+
+    // Web app
+    if (knownSources.has('authorized_webapp')) {
+        document.getElementById('webappDot').style.background
+            = '#3fb950';
+        document.getElementById('webappDot').style.animation
+            = 'pulse 2s infinite';
+        document.getElementById('webappLabel').style.color
+            = '#e6edf3';
+    }
+
+    // WordPress
+    if (knownSources.has('wordpress')) {
+        document.getElementById('wpDot').style.background
+            = '#3fb950';
+        document.getElementById('wpDot').style.animation
+            = 'pulse 2s infinite';
+        document.getElementById('wpLabel').style.color
+            = '#e6edf3';
+    }
+}
+
+// ── Render log entries ────────────────────────────────────────
+function renderLogs(logs, isNew) {
+    const feed = document.getElementById('logFeed');
+
+    if (logs.length === 0 && lastLogId === 0) {
+        feed.innerHTML =
+            '<div style="text-align:center;padding:40px;' +
+            'color:#8b949e;">' +
+            '<i class="bi bi-inbox" style="font-size:32px;' +
+            'display:block;margin-bottom:10px;"></i>' +
+            'No logs yet — waiting for activity...</div>';
+        return;
+    }
+
+    if (logs.length === 0) return;
+
+    // Update last known ID
+    if (logs[0].id > lastLogId) lastLogId = logs[0].id;
+
+    if (isNew) {
+        // Prepend new logs at the top
+        logs.forEach(log => {
+            const div = document.createElement('div');
+            div.className = 'log-entry new-entry';
+            div.innerHTML = `
+                <div style="color:#484f58;
+                            min-width:30px;
+                            font-size:11px;">
+                    #${log.id}
+                </div>
+                <div style="flex:1;">
+                    <div style="display:flex;
+                                gap:6px;
+                                align-items:center;
+                                flex-wrap:wrap;
+                                margin-bottom:4px;">
+                        <code style="color:#58a6ff;
+                                     font-size:11px;">
+                            ${log.ip_address}
+                        </code>
+                        ${eventBadge(log.event_type)}
+                        ${sourceBadge(log.source)}
+                    </div>
+                    <div style="color:#8b949e; font-size:11px;">
+                        ${log.message || '—'}
+                    </div>
+                </div>
+                <div style="color:#484f58;
+                            font-size:10px;
+                            white-space:nowrap;
+                            min-width:120px;
+                            text-align:right;">
+                    ${log.timestamp}
+                </div>
+            `;
+            feed.insertBefore(div, feed.firstChild);
+        });
+
+        // Keep max 100 entries
+        while (feed.children.length > 100) {
+            feed.removeChild(feed.lastChild);
+        }
+
+    } else {
+        // Initial load — fill the feed
+        feed.innerHTML = '';
+        logs.forEach(log => {
+            const div = document.createElement('div');
+            div.className = 'log-entry';
+            div.innerHTML = `
+                <div style="color:#484f58;
+                            min-width:30px;
+                            font-size:11px;">
+                    #${log.id}
+                </div>
+                <div style="flex:1;">
+                    <div style="display:flex;
+                                gap:6px;
+                                align-items:center;
+                                flex-wrap:wrap;
+                                margin-bottom:4px;">
+                        <code style="color:#58a6ff;
+                                     font-size:11px;">
+                            ${log.ip_address}
+                        </code>
+                        ${eventBadge(log.event_type)}
+                        ${sourceBadge(log.source)}
+                    </div>
+                    <div style="color:#8b949e; font-size:11px;">
+                        ${log.message || '—'}
+                    </div>
+                </div>
+                <div style="color:#484f58;
+                            font-size:10px;
+                            white-space:nowrap;
+                            min-width:120px;
+                            text-align:right;">
+                    ${log.timestamp}
+                </div>
+            `;
+            feed.appendChild(div);
+        });
+    }
+
+    document.getElementById('logCount').textContent =
+        `${feed.children.length} entries`;
+}
+
+// ── Render alert feed ─────────────────────────────────────────
+function renderAlerts(alerts) {
+    const feed = document.getElementById('alertFeed');
+
+    if (alerts.length === 0) {
+        feed.innerHTML =
+            '<div style="text-align:center;padding:40px 20px;' +
+            'color:#8b949e;">' +
+            '<i class="bi bi-shield-check" style="font-size:32px;' +
+            'color:#3fb950;display:block;margin-bottom:10px;"></i>' +
+            'No active alerts</div>';
+        return;
+    }
+
+    feed.innerHTML = '';
+    alerts.forEach(alert => {
+        const colors = {
+            high:   { bg:'rgba(248,81,73,0.1)',
+                      border:'rgba(248,81,73,0.3)',
+                      color:'#f85149' },
+            medium: { bg:'rgba(210,153,34,0.1)',
+                      border:'rgba(210,153,34,0.3)',
+                      color:'#d29922' },
+            low:    { bg:'rgba(63,185,80,0.1)',
+                      border:'rgba(63,185,80,0.3)',
+                      color:'#3fb950' },
+        };
+        const c = colors[alert.severity] || colors.medium;
+
+        const div = document.createElement('div');
+        div.style.cssText =
+            `background:${c.bg};border:1px solid ${c.border};` +
+            `border-radius:8px;padding:12px;margin-bottom:8px;`;
+        div.innerHTML = `
+            <div style="color:${c.color};font-weight:600;
+                        font-size:12px;margin-bottom:4px;">
+                🚨 ${alert.alert_type}
+            </div>
+            <div style="color:#8b949e;font-size:11px;">
+                IP:
+                <code style="color:#58a6ff;">
+                    ${alert.ip_address}
+                </code>
+            </div>
+            <div style="color:#484f58;font-size:10px;
+                        margin-top:4px;">
+                ${alert.timestamp}
+            </div>
+        `;
+        feed.appendChild(div);
+    });
+}
+
+// ── Main fetch function ───────────────────────────────────────
+function fetchLogs() {
+    let url = `/api/live-logs?`;
+    if (currentSource) url += `source=${currentSource}&`;
+
+    const isInitial = lastLogId === 0;
+    if (!isInitial) url += `since=${lastLogId}`;
+
+    fetch(url)
+        .then(r => r.json())
+        .then(data => {
+            renderLogs(data.logs, !isInitial);
+            renderAlerts(data.alerts);
+            updateSourceStatus(data.logs);
+
+            // Update stat counters
+            document.getElementById('statTodayEvents')
+                .textContent = data.today_events;
+            document.getElementById('statThreats')
+                .textContent = data.today_threats;
+        })
+        .catch(err => console.log('Fetch error:', err));
+}
+
+// ── Fetch stats only (lightweight) ───────────────────────────
+function fetchStats() {
+    fetch('/api/live-stats')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('statTodayEvents')
+                .textContent = data.today_events;
+            document.getElementById('statThreats')
+                .textContent = data.today_threats;
+            document.getElementById('statBlocked')
+                .textContent = data.total_blocked;
+
+            const t = data.last_activity;
+            document.getElementById('statLastActivity')
+                .textContent = t
+                    ? t.toString().substring(11, 19)
+                    : 'None';
+        })
+        .catch(err => console.log('Stats error:', err));
+}
+
+// ── Start auto-refresh ────────────────────────────────────────
+function startRefresh() {
+    if (refreshTimer) clearInterval(refreshTimer);
+    refreshTimer = setInterval(function() {
+        fetchLogs();
+        fetchStats();
+    }, 3000); // Every 3 seconds
+}
+
+// ── Initialize ────────────────────────────────────────────────
+fetchLogs();
+fetchStats();
+startRefresh();
+</script>
 {% endblock %}
