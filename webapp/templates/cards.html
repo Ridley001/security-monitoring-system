@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechCorp Bank — Card Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/bank.css') }}" rel="stylesheet">
+</head>
+<body>
+
+<!-- App Navbar -->
+<nav class="app-navbar">
+    <a href="/" class="app-brand">
+        <div class="app-brand-icon">
+            <i class="bi bi-bank2"></i>
+        </div>
+        <span class="app-brand-name">
+            TechCorp <span>Bank</span>
+        </span>
+    </a>
+    <div class="app-nav-links">
+        <a href="{{ url_for('dashboard') }}"
+           class="app-nav-link">
+            <i class="bi bi-speedometer2"></i>Dashboard
+        </a>
+        <a href="{{ url_for('transfer') }}"
+           class="app-nav-link">
+            <i class="bi bi-send"></i>Transfer
+        </a>
+        <a href="{{ url_for('transactions') }}"
+           class="app-nav-link">
+            <i class="bi bi-list-ul"></i>Transactions
+        </a>
+        <a href="{{ url_for('cards') }}"
+           class="app-nav-link active">
+            <i class="bi bi-credit-card"></i>Cards
+        </a>
+        <a href="{{ url_for('support') }}"
+           class="app-nav-link">
+            <i class="bi bi-headset"></i>Support
+        </a>
+    </div>
+    <div class="app-user-menu">
+        <div class="app-avatar">{{ account.name[0] }}</div>
+        <div class="app-user-info">
+            <div class="app-user-name">
+                {{ account.name.split()[0] }}
+            </div>
+            <div class="app-user-role">
+                {{ account.account_type }}
+            </div>
+        </div>
+        <a href="{{ url_for('logout') }}" class="app-logout">
+            <i class="bi bi-box-arrow-right"></i>Logout
+        </a>
+    </div>
+</nav>
+
+<!-- Page body -->
+<div style="background:var(--gray-100);
+            min-height:calc(100vh - 64px);
+            padding:32px;">
+    <div style="max-width:1000px; margin:0 auto;">
+
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(
+            with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="app-alert {{ category }}">
+                    {% if category == 'success' %}
+                        <i class="bi bi-check-circle-fill"></i>
+                    {% else %}
+                        <i class="bi bi-info-circle-fill"></i>
+                    {% endif %}
+                    <span>{{ message }}</span>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="page-title">Card Management</div>
+        <div class="page-subtitle">
+            Manage your TechCorp Bank debit card
+        </div>
+
+        <div style="display:grid;
+                    grid-template-columns:1fr 1fr;
+                    gap:24px;
+                    align-items:start;">
+
+            <!-- Card visual column -->
+            <div>
+
+                <!-- Card visual -->
+                <div class="card-visual
+                     {% if account.card_frozen %}frozen{% endif %}"
+                     style="margin-bottom:16px;">
+
+                    {% if account.card_frozen %}
+                    <div class="card-frozen-overlay">
+                        <div class="card-frozen-text">
+                            ❄️ FROZEN
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="card-chip-img"></div>
+
+                    <div class="card-number-text">
+                        {{ account.card_number }}
+                    </div>
+
+                    <div class="card-info-row">
+                        <div>
+                            <div class="card-info-label">
+                                Card Holder
+                            </div>
+                            <div class="card-info-value">
+                                {{ account.name|upper }}
+                            </div>
+                        </div>
+                        <div>
+                            <div class="card-info-label">
+                                Expires
+                            </div>
+                            <div class="card-info-value">
+                                {{ account.card_expiry }}
+                            </div>
+                        </div>
+                        <div>
+                            <div class="card-info-label">
+                                Limit
+                            </div>
+                            <div class="card-info-value">
+                                ${{ "%.0f"|format(
+                                    account.card_limit) }}
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Card status alert -->
+                {% if account.card_frozen %}
+                <div class="app-alert danger">
+                    <i class="bi bi-lock-fill"></i>
+                    <span>
+                        Your card is <strong>FROZEN</strong>.
+                        All transactions are blocked until
+                        you unfreeze it.
+                    </span>
+                </div>
+                {% else %}
+                <div class="app-alert success">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span>
+                        Your card is <strong>ACTIVE</strong>
+                        and ready for use.
+                    </span>
+                </div>
+                {% endif %}
+
+            </div>
+
+            <!-- Controls column -->
+            <div style="display:flex;
+                        flex-direction:column;
+                        gap:16px;">
+
+                <!-- Card controls card -->
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <div class="data-card-title">
+                            <i class="bi bi-gear-fill"></i>
+                            Card Controls
+                        </div>
+                    </div>
+                    <div style="padding:20px 22px;">
+
+                        <p style="font-size:13px;
+                                  color:var(--text-secondary);
+                                  line-height:1.7;
+                                  margin-bottom:20px;">
+                            Freezing your card blocks all new
+                            transactions instantly while keeping
+                            your account active. All actions are
+                            logged to SecureWatch.
+                        </p>
+
+                        {% if account.card_frozen %}
+                        <form method="POST"
+                              action="{{ url_for('unfreeze_card') }}"
+                              style="margin-bottom:12px;">
+                            <button type="submit"
+                                    class="btn-success-app">
+                                <i class="bi bi-unlock-fill"></i>
+                                Unfreeze My Card
+                            </button>
+                        </form>
+                        {% else %}
+                        <form method="POST"
+                              action="{{ url_for('freeze_card') }}"
+                              style="margin-bottom:12px;"
+                              onsubmit="return confirm(
+                                'Freeze your card? All new transactions will be blocked.')">
+                            <button type="submit"
+                                    class="btn-danger-app">
+                                <i class="bi bi-lock-fill"></i>
+                                Freeze My Card
+                            </button>
+                        </form>
+                        {% endif %}
+
+                    </div>
+                </div>
+
+                <!-- Card details card -->
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <div class="data-card-title">
+                            <i class="bi bi-info-circle-fill"></i>
+                            Card Details
+                        </div>
+                    </div>
+                    <div style="padding:0;">
+
+                        <div style="display:flex;
+                                    align-items:center;
+                                    justify-content:space-between;
+                                    padding:14px 22px;
+                                    border-bottom:1px solid var(--gray-100);
+                                    font-size:13px;">
+                            <span style="color:var(--text-secondary);">
+                                Card Number
+                            </span>
+                            <span style="font-family:monospace;
+                                         font-weight:600;">
+                                {{ account.card_number }}
+                            </span>
+                        </div>
+
+                        <div style="display:flex;
+                                    align-items:center;
+                                    justify-content:space-between;
+                                    padding:14px 22px;
+                                    border-bottom:1px solid var(--gray-100);
+                                    font-size:13px;">
+                            <span style="color:var(--text-secondary);">
+                                Expiry Date
+                            </span>
+                            <span style="font-weight:600;">
+                                {{ account.card_expiry }}
+                            </span>
+                        </div>
+
+                        <div style="display:flex;
+                                    align-items:center;
+                                    justify-content:space-between;
+                                    padding:14px 22px;
+                                    border-bottom:1px solid var(--gray-100);
+                                    font-size:13px;">
+                            <span style="color:var(--text-secondary);">
+                                Daily Limit
+                            </span>
+                            <span style="font-weight:600;">
+                                ${{ "%.2f"|format(account.card_limit) }}
+                            </span>
+                        </div>
+
+                        <div style="display:flex;
+                                    align-items:center;
+                                    justify-content:space-between;
+                                    padding:14px 22px;
+                                    font-size:13px;">
+                            <span style="color:var(--text-secondary);">
+                                Status
+                            </span>
+                            {% if account.card_frozen %}
+                                <span class="badge badge-debit">
+                                    ❄️ Frozen
+                                </span>
+                            {% else %}
+                                <span class="badge badge-credit">
+                                    ✓ Active
+                                </span>
+                            {% endif %}
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Security notice -->
+                <div class="monitor-badge"
+                     style="justify-content:center;
+                            padding:10px;">
+                    <span class="dot"></span>
+                    All card actions monitored by SecureWatch
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

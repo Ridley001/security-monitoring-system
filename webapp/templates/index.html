@@ -3,101 +3,479 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TechCorp Portal</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>TechCorp Bank — Secure Digital Banking</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
-        body {
-            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-        }
-        .portal-card {
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 20px;
-            padding: 50px 40px;
-            text-align: center;
-            max-width: 500px;
-            width: 100%;
-        }
-        .portal-icon {
-            font-size: 64px;
-            color: #58a6ff;
-            margin-bottom: 20px;
-        }
-        .btn-portal {
-            background: linear-gradient(135deg, #58a6ff, #1a73e8);
-            border: none;
-            padding: 12px 40px;
-            border-radius: 10px;
-            color: white;
-            font-size: 16px;
-            font-weight: 600;
-            text-decoration: none;
-            display: inline-block;
-            margin-top: 20px;
-        }
-        .btn-portal:hover {
-            opacity: 0.9;
-            color: white;
-        }
-        .monitored-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(63,185,80,0.1);
-            border: 1px solid rgba(63,185,80,0.3);
-            color: #3fb950;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 12px;
-            margin-top: 20px;
-        }
-        .pulse {
-            width: 8px;
-            height: 8px;
-            background: #3fb950;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50%       { opacity: 0.3; }
-        }
-    </style>
+    <link href="{{ url_for('static', filename='css/bank.css') }}" rel="stylesheet">
 </head>
 <body>
-    <div class="portal-card">
 
-        <div class="portal-icon">
-            <i class="bi bi-building"></i>
+<!-- ── NAVBAR ─────────────────────────────────────────────────── -->
+<nav class="landing-nav" id="navbar">
+    <a href="/" class="nav-brand">
+        <div class="nav-brand-icon">TC</div>
+        <span class="nav-brand-name">TechCorp <span>Bank</span></span>
+    </a>
+    <div class="landing-nav-links">
+        <a href="#features" class="landing-nav-link">Features</a>
+        <a href="#security" class="landing-nav-link">Security</a>
+        <a href="#how-it-works" class="landing-nav-link">How It Works</a>
+        <a href="{{ url_for('login') }}" class="landing-nav-link nav-cta">
+            <i class="bi bi-lock-fill"></i> Online Banking
+        </a>
+    </div>
+</nav>
+
+<!-- ── HERO ───────────────────────────────────────────────────── -->
+<section class="hero">
+    <div class="hero-content">
+
+        <!-- Left -->
+        <div class="hero-left">
+            <div class="hero-eyebrow">
+                <span class="dot"></span>
+                Trusted by 50,000+ customers
+            </div>
+
+            <h1 class="hero-title">
+                Banking That<br>
+                Works <span class="gold">For You,</span><br>
+                <span class="outline">Not Against You</span>
+            </h1>
+
+            <p class="hero-subtitle">
+                TechCorp Bank combines cutting-edge security with
+                effortless banking. Transfer funds, manage your card,
+                and track every transaction — all protected by our
+                AI-powered security monitoring system.
+            </p>
+
+            <div class="hero-buttons">
+                <a href="{{ url_for('login') }}" class="btn-hero-primary">
+                    <i class="bi bi-bank2"></i>
+                    Open Your Account
+                </a>
+                <a href="#features" class="btn-hero-secondary">
+                    <i class="bi bi-play-circle"></i>
+                    See How It Works
+                </a>
+            </div>
+
+            <div class="hero-trust">
+                <div class="trust-item">
+                    <i class="bi bi-shield-fill-check"></i>
+                    256-bit SSL Encryption
+                </div>
+                <div class="trust-item">
+                    <i class="bi bi-eye-slash-fill"></i>
+                    Zero Data Sharing
+                </div>
+                <div class="trust-item">
+                    <i class="bi bi-clock-fill"></i>
+                    24/7 Monitoring
+                </div>
+            </div>
         </div>
 
-        <h2 style="font-weight:700; margin-bottom:8px;">
-            TechCorp Employee Portal
+        <!-- Right — Card mockup -->
+        <div class="hero-right">
+
+            <div class="hero-card-mockup">
+                <div class="mockup-chip">
+                    <i class="bi bi-cpu" style="font-size:16px;color:#0a1628;"></i>
+                </div>
+                <div class="mockup-number">
+                    4521 •••• •••• 8834
+                </div>
+                <div class="mockup-bottom">
+                    <div>
+                        <div class="mockup-label">Card Holder</div>
+                        <div class="mockup-value">JOHN MENSAH</div>
+                    </div>
+                    <div>
+                        <div class="mockup-label">Expires</div>
+                        <div class="mockup-value">09/27</div>
+                    </div>
+                    <div class="mockup-logo">💳</div>
+                </div>
+            </div>
+
+            <div class="hero-stat-cards">
+                <div class="hero-stat-card">
+                    <div class="hero-stat-number">$12,450</div>
+                    <div class="hero-stat-label">Available Balance</div>
+                </div>
+                <div class="hero-stat-card">
+                    <div class="hero-stat-number" style="color:#f0cc5a;">+2.4%</div>
+                    <div class="hero-stat-label">This Month</div>
+                </div>
+                <div class="hero-stat-card">
+                    <div class="hero-stat-number" style="color:#34d399;">Active</div>
+                    <div class="hero-stat-label">Card Status</div>
+                </div>
+                <div class="hero-stat-card">
+                    <div class="hero-stat-number">128</div>
+                    <div class="hero-stat-label">Transactions</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- ── STATS BAR ──────────────────────────────────────────────── -->
+<section class="stats-section">
+    <div class="stats-grid">
+        <div class="stat-item">
+            <div class="stat-number">50K+</div>
+            <div class="stat-label">Active Customers</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">$2.4B</div>
+            <div class="stat-label">Transactions Processed</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">99.9%</div>
+            <div class="stat-label">Uptime Guarantee</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">0</div>
+            <div class="stat-label">Security Breaches</div>
+        </div>
+    </div>
+</section>
+
+<!-- ── FEATURES ───────────────────────────────────────────────── -->
+<section class="features-section" id="features">
+    <div class="section-header">
+        <div class="section-tag">Features</div>
+        <h2 class="section-title">
+            Everything you need,<br>nothing you don't
         </h2>
-        <p style="color:rgba(255,255,255,0.6); margin-bottom:0;">
-            Internal company portal for authorized employees only.
-          
+        <p class="section-subtitle">
+            Powerful banking features designed for the
+            modern professional.
         </p>
+    </div>
 
-        <a href="{{ url_for('login') }}" class="btn-portal">
-            <i class="bi bi-box-arrow-in-right me-2"></i>
-            Employee Login
-        </a>
+    <div class="features-grid">
 
-        <div>
-            <span class="monitored-badge">
-                <span class="pulse"></span>
-                Security Monitoring Active
-            </span>
+        <div class="feature-card">
+            <div class="feature-icon-wrap blue">
+                <i class="bi bi-send-fill"></i>
+            </div>
+            <div class="feature-card-title">
+                Instant Fund Transfers
+            </div>
+            <div class="feature-card-desc">
+                Send money to any TechCorp Bank account in
+                seconds. Transfers are processed in real-time
+                and logged to our security system instantly.
+            </div>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon-wrap gold">
+                <i class="bi bi-credit-card-2-front-fill"></i>
+            </div>
+            <div class="feature-card-title">
+                Smart Card Controls
+            </div>
+            <div class="feature-card-desc">
+                Freeze and unfreeze your debit card instantly
+                from your dashboard. Lost your card? Block it
+                in one tap with full audit trail.
+            </div>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon-wrap green">
+                <i class="bi bi-shield-lock-fill"></i>
+            </div>
+            <div class="feature-card-title">
+                SecureWatch Integration
+            </div>
+            <div class="feature-card-desc">
+                Every action is monitored 24/7 by our
+                SecureWatch system. Unusual activity triggers
+                automatic alerts to our security team.
+            </div>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon-wrap blue">
+                <i class="bi bi-graph-up-arrow"></i>
+            </div>
+            <div class="feature-card-title">
+                Transaction History
+            </div>
+            <div class="feature-card-desc">
+                Complete visibility of every transaction.
+                Search, filter, and export your history.
+                Never miss a payment again.
+            </div>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon-wrap gold">
+                <i class="bi bi-headset"></i>
+            </div>
+            <div class="feature-card-title">
+                24/7 Support Center
+            </div>
+            <div class="feature-card-desc">
+                Raise support tickets directly from your
+                dashboard. Our team responds within
+                24 hours to every request.
+            </div>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon-wrap green">
+                <i class="bi bi-bell-fill"></i>
+            </div>
+            <div class="feature-card-title">
+                Real-Time Alerts
+            </div>
+            <div class="feature-card-desc">
+                Get notified immediately of suspicious
+                activity. Large transfers and unusual
+                login patterns trigger instant security alerts.
+            </div>
         </div>
 
     </div>
+</section>
+
+<!-- ── HOW IT WORKS ───────────────────────────────────────────── -->
+<section class="steps-section" id="how-it-works">
+    <div class="section-header">
+        <div class="section-tag">How It Works</div>
+        <h2 class="section-title">Up and running in minutes</h2>
+        <p class="section-subtitle">
+            Getting started with TechCorp Bank is simple.
+        </p>
+    </div>
+
+    <div class="steps-grid">
+        <div class="step-item">
+            <div class="step-number">1</div>
+            <div class="step-title">Create Your Account</div>
+            <div class="step-desc">
+                Sign in with your employee credentials
+                provided by your HR department. No lengthy
+                registration required.
+            </div>
+        </div>
+        <div class="step-item">
+            <div class="step-number">2</div>
+            <div class="step-title">Verify Your Identity</div>
+            <div class="step-desc">
+                Our system verifies your credentials and
+                checks your security clearance before
+                granting access to your account.
+            </div>
+        </div>
+        <div class="step-item">
+            <div class="step-number">3</div>
+            <div class="step-title">Start Banking</div>
+            <div class="step-desc">
+                Transfer funds, manage your card, and
+                view your full transaction history — all
+                in one secure dashboard.
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── SECURITY SECTION ───────────────────────────────────────── -->
+<section class="security-section" id="security">
+    <div class="security-inner">
+
+        <div>
+            <div class="section-tag" style="text-align:left;">
+                Security First
+            </div>
+            <h2 class="section-title" style="text-align:left;">
+                Your money is safe.<br>
+                <span style="color:var(--blue-light);">
+                    We guarantee it.
+                </span>
+            </h2>
+            <p style="font-size:15px; color:var(--text-secondary);
+                      line-height:1.8; margin-bottom:28px;">
+                TechCorp Bank is powered by SecureWatch — our
+                enterprise-grade security monitoring system that
+                watches every transaction, login, and account
+                change in real time.
+            </p>
+            <a href="{{ url_for('login') }}" class="btn-primary">
+                <i class="bi bi-bank"></i>
+                Access Your Account
+            </a>
+        </div>
+
+        <div class="security-badges">
+
+            <div class="security-badge-card">
+                <div class="security-badge-icon">
+                    <i class="bi bi-shield-check-fill"></i>
+                </div>
+                <div>
+                    <div class="security-badge-title">
+                        Real-Time Monitoring
+                    </div>
+                    <div class="security-badge-desc">
+                        SecureWatch monitors all activity 24/7
+                        with instant threat detection.
+                    </div>
+                </div>
+            </div>
+
+            <div class="security-badge-card">
+                <div class="security-badge-icon">
+                    <i class="bi bi-lock-fill"></i>
+                </div>
+                <div>
+                    <div class="security-badge-title">
+                        IP Blocking
+                    </div>
+                    <div class="security-badge-desc">
+                        Suspicious IPs are automatically
+                        blocked from accessing accounts.
+                    </div>
+                </div>
+            </div>
+
+            <div class="security-badge-card">
+                <div class="security-badge-icon">
+                    <i class="bi bi-graph-up"></i>
+                </div>
+                <div>
+                    <div class="security-badge-title">
+                        Fraud Detection
+                    </div>
+                    <div class="security-badge-desc">
+                        Large and unusual transfers trigger
+                        automatic security alerts.
+                    </div>
+                </div>
+            </div>
+
+            <div class="security-badge-card">
+                <div class="security-badge-icon">
+                    <i class="bi bi-eye-fill"></i>
+                </div>
+                <div>
+                    <div class="security-badge-title">
+                        Full Audit Trail
+                    </div>
+                    <div class="security-badge-desc">
+                        Every action is logged with timestamp,
+                        IP address, and user identity.
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- ── CTA SECTION ────────────────────────────────────────────── -->
+<section class="cta-section">
+    <h2 class="cta-title">
+        Ready to experience<br>
+        secure banking?
+    </h2>
+    <p class="cta-subtitle">
+        Join thousands of customers who trust TechCorp Bank
+        with their finances every day.
+    </p>
+    <a href="{{ url_for('login') }}" class="btn-hero-primary"
+       style="position:relative; z-index:1;">
+        <i class="bi bi-bank2"></i>
+        Get Started Today
+    </a>
+</section>
+
+<!-- ── FOOTER ─────────────────────────────────────────────────── -->
+<footer class="landing-footer">
+    <div class="footer-top">
+
+        <div>
+            <a href="/" class="nav-brand">
+                <div class="nav-brand-icon">TC</div>
+                <span class="nav-brand-name"
+                      style="font-size:16px;">
+                    TechCorp <span>Bank</span>
+                </span>
+            </a>
+            <p class="footer-brand-desc">
+                TechCorp Bank provides enterprise-grade digital
+                banking services. All transactions are monitored
+                and protected by our SecureWatch security system.
+            </p>
+            <div class="monitor-badge">
+                <span class="dot"></span>
+                SecureWatch Protection Active
+            </div>
+        </div>
+
+        <div>
+            <div class="footer-heading">Banking</div>
+            <ul class="footer-links">
+                <li><a href="#">Personal Banking</a></li>
+                <li><a href="#">Business Accounts</a></li>
+                <li><a href="#">Fund Transfers</a></li>
+                <li><a href="#">Card Services</a></li>
+            </ul>
+        </div>
+
+        <div>
+            <div class="footer-heading">Security</div>
+            <ul class="footer-links">
+                <li><a href="#">Security Center</a></li>
+                <li><a href="#">Fraud Protection</a></li>
+                <li><a href="#">Privacy Policy</a></li>
+                <li><a href="#">Terms of Service</a></li>
+            </ul>
+        </div>
+
+        <div>
+            <div class="footer-heading">Support</div>
+            <ul class="footer-links">
+                <li><a href="#">Help Center</a></li>
+                <li><a href="#">Contact Us</a></li>
+                <li><a href="#">Report Fraud</a></li>
+                <li><a href="#">Accessibility</a></li>
+            </ul>
+        </div>
+
+    </div>
+
+    <div class="footer-bottom">
+        <span>
+            © 2024 TechCorp Bank. All rights reserved.
+            Secured by SecureWatch Monitoring System.
+        </span>
+        <div class="footer-badges">
+            <span class="footer-badge">🔒 256-bit SSL</span>
+            <span class="footer-badge">🛡️ SecureWatch</span>
+            <span class="footer-badge">✓ FDIC Insured</span>
+        </div>
+    </div>
+</footer>
+
+<!-- Navbar scroll effect -->
+<script>
+window.addEventListener('scroll', function() {
+    const nav = document.getElementById('navbar');
+    if (window.scrollY > 50) {
+        nav.classList.add('scrolled');
+    } else {
+        nav.classList.remove('scrolled');
+    }
+});
+</script>
+
 </body>
 </html>

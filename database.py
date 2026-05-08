@@ -91,6 +91,46 @@ def init_db():
         INSERT OR IGNORE INTO users (username, password, role)
         VALUES (?, ?, 'admin')
     ''', ('admin', hashed_password))
+    # ── TABLE 7: bank_tickets ────────────────────────────────────
+    # Stores support tickets from TechCorp Banking webapp
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS bank_tickets (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            ticket_ref  TEXT NOT NULL UNIQUE,
+            username    TEXT NOT NULL,
+            client_name TEXT NOT NULL,
+            category    TEXT NOT NULL,
+            subject     TEXT NOT NULL,
+            message     TEXT NOT NULL,
+            status      TEXT DEFAULT 'open',
+            admin_reply TEXT,
+            ip_address  TEXT,
+            created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # ── TABLE 8: bank_transactions ───────────────────────────────
+    # Stores large transfers that need admin approval
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS bank_transactions (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            tx_ref          TEXT NOT NULL UNIQUE,
+            sender_username TEXT NOT NULL,
+            sender_name     TEXT NOT NULL,
+            recipient_name  TEXT NOT NULL,
+            amount          REAL NOT NULL,
+            note            TEXT,
+            status          TEXT DEFAULT 'pending_review',
+            admin_decision  TEXT,
+            rejection_reason TEXT,
+            document_path   TEXT,
+            document_requested INTEGER DEFAULT 0,
+            ip_address      TEXT,
+            created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
 
     conn.commit()
     conn.close()

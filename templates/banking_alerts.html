@@ -1,0 +1,482 @@
+{% extends "base.html" %}
+{% block title %}Banking Alerts{% endblock %}
+
+{% block page_title %}
+    <i class="bi bi-bank2 me-2"></i>Manage Banking Alerts
+{% endblock %}
+
+{% block content %}
+
+<div class="page-heading">
+    <h4>Banking Transaction Review</h4>
+    <p>Review, approve or reject suspicious transactions
+       from TechCorp Bank</p>
+</div>
+
+<!-- ── STAT CARDS ─────────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+
+    <div class="col-md-3">
+        <a href="{{ url_for('banking_alerts', status='pending_review') }}"
+           style="text-decoration:none;">
+            <div class="stat-card">
+                <div class="stat-icon yellow">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ pending_count }}</h3>
+                    <p>Pending Review</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-3">
+        <a href="{{ url_for('banking_alerts', status='document_requested') }}"
+           style="text-decoration:none;">
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <i class="bi bi-file-earmark-arrow-up-fill"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ doc_requested }}</h3>
+                    <p>Document Requested</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-3">
+        <a href="{{ url_for('banking_alerts', status='approved') }}"
+           style="text-decoration:none;">
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ approved_count }}</h3>
+                    <p>Approved</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-3">
+        <a href="{{ url_for('banking_alerts', status='rejected') }}"
+           style="text-decoration:none;">
+            <div class="stat-card">
+                <div class="stat-icon red">
+                    <i class="bi bi-x-circle-fill"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ rejected_count }}</h3>
+                    <p>Rejected</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+</div>
+
+<!-- Pending amount alert -->
+{% if total_amount_pending > 0 %}
+<div style="background:rgba(210,153,34,0.08);
+            border:1px solid rgba(210,153,34,0.25);
+            border-radius:10px;
+            padding:14px 20px;
+            margin-bottom:20px;
+            font-size:13px;
+            color:#d29922;
+            display:flex;
+            align-items:center;
+            gap:10px;">
+    <i class="bi bi-exclamation-triangle-fill"
+       style="font-size:18px;"></i>
+    <span>
+        <strong>${{ "%.2f"|format(total_amount_pending) }}</strong>
+        in transactions currently awaiting your review.
+        Please review promptly.
+    </span>
+</div>
+{% endif %}
+
+<!-- ── FILTER ─────────────────────────────────────────────── -->
+<div style="background:#161b22;
+            border:1px solid #30363d;
+            border-radius:14px;
+            padding:16px 20px;
+            margin-bottom:20px;">
+    <form method="GET" action="{{ url_for('banking_alerts') }}">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label style="color:#8b949e; font-size:12px;
+                              display:block; margin-bottom:6px;">
+                    Filter by Status
+                </label>
+                <select name="status" class="form-select"
+                        style="background:#1c2128;
+                               border:1px solid #30363d;
+                               color:#e6edf3;">
+                    <option value="">All Transactions</option>
+                    <option value="pending_review"
+                        {% if status_filter == 'pending_review' %}selected{% endif %}>
+                        Pending Review
+                    </option>
+                    <option value="document_requested"
+                        {% if status_filter == 'document_requested' %}selected{% endif %}>
+                        Document Requested
+                    </option>
+                    <option value="approved"
+                        {% if status_filter == 'approved' %}selected{% endif %}>
+                        Approved
+                    </option>
+                    <option value="rejected"
+                        {% if status_filter == 'rejected' %}selected{% endif %}>
+                        Rejected
+                    </option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-purple w-100">
+                    <i class="bi bi-funnel me-1"></i>Filter
+                </button>
+            </div>
+            {% if status_filter %}
+            <div class="col-md-2">
+                <a href="{{ url_for('banking_alerts') }}"
+                   class="btn w-100"
+                   style="background:rgba(255,255,255,0.05);
+                          color:#8b949e;
+                          border:1px solid #30363d;">
+                    Clear
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- ── TRANSACTIONS LIST ──────────────────────────────────── -->
+{% if transactions %}
+    {% for tx in transactions %}
+    {% set tx_ref = tx['tx_ref'] %}
+
+    <div style="background:#161b22;
+                border:1px solid #30363d;
+                border-radius:14px;
+                margin-bottom:16px;
+                overflow:hidden;
+                {% if tx['status'] == 'pending_review' %}
+                    border-left:4px solid #d29922;
+                {% elif tx['status'] == 'document_requested' %}
+                    border-left:4px solid #58a6ff;
+                {% elif tx['status'] == 'approved' %}
+                    border-left:4px solid #3fb950;
+                {% elif tx['status'] == 'rejected' %}
+                    border-left:4px solid #f85149;
+                {% endif %}">
+
+        <!-- Transaction header -->
+        <div style="background:#1c2128;
+                    border-bottom:1px solid #30363d;
+                    padding:16px 20px;
+                    display:flex;
+                    align-items:center;
+                    justify-content:space-between;
+                    flex-wrap:wrap;
+                    gap:10px;">
+
+            <div style="display:flex;
+                        align-items:center;
+                        gap:12px;
+                        flex-wrap:wrap;">
+
+                <code style="color:#7b6ff0;
+                             font-size:12px;
+                             background:rgba(123,111,240,0.1);
+                             padding:3px 10px;
+                             border-radius:6px;">
+                    {{ tx_ref }}
+                </code>
+
+                <!-- Status badge -->
+                {% if tx['status'] == 'pending_review' %}
+                    <span style="background:rgba(210,153,34,0.12);
+                                 color:#d29922;
+                                 border:1px solid rgba(210,153,34,0.25);
+                                 padding:3px 10px;
+                                 border-radius:6px;
+                                 font-size:11px;
+                                 font-weight:600;">
+                        ⏳ Pending Review
+                    </span>
+                {% elif tx['status'] == 'document_requested' %}
+                    <span style="background:rgba(88,166,255,0.12);
+                                 color:#58a6ff;
+                                 border:1px solid rgba(88,166,255,0.25);
+                                 padding:3px 10px;
+                                 border-radius:6px;
+                                 font-size:11px;
+                                 font-weight:600;">
+                        📄 Document Requested
+                    </span>
+                {% elif tx['status'] == 'approved' %}
+                    <span style="background:rgba(63,185,80,0.12);
+                                 color:#3fb950;
+                                 border:1px solid rgba(63,185,80,0.25);
+                                 padding:3px 10px;
+                                 border-radius:6px;
+                                 font-size:11px;
+                                 font-weight:600;">
+                        ✅ Approved
+                    </span>
+                {% elif tx['status'] == 'rejected' %}
+                    <span style="background:rgba(248,81,73,0.12);
+                                 color:#f85149;
+                                 border:1px solid rgba(248,81,73,0.25);
+                                 padding:3px 10px;
+                                 border-radius:6px;
+                                 font-size:11px;
+                                 font-weight:600;">
+                        🚫 Rejected
+                    </span>
+                {% endif %}
+
+            </div>
+
+            <div style="font-size:12px; color:#8b949e;">
+                Submitted: {{ tx['created_at'][:16] }}
+            </div>
+
+        </div>
+
+        <!-- Transaction details -->
+        <div style="padding:20px;">
+
+            <!-- Amount and transfer info -->
+            <div style="display:grid;
+                        grid-template-columns:repeat(4,1fr);
+                        gap:16px;
+                        background:#0d1117;
+                        border:1px solid #30363d;
+                        border-radius:10px;
+                        padding:16px 20px;
+                        margin-bottom:16px;">
+
+                <div>
+                    <div style="font-size:10px; color:#484f58;
+                                text-transform:uppercase;
+                                letter-spacing:1px;
+                                margin-bottom:4px;">
+                        Amount
+                    </div>
+                    <div style="font-size:22px; font-weight:800;
+                                color:#f85149;">
+                        ${{ "%.2f"|format(tx['amount']) }}
+                    </div>
+                </div>
+
+                <div>
+                    <div style="font-size:10px; color:#484f58;
+                                text-transform:uppercase;
+                                letter-spacing:1px;
+                                margin-bottom:4px;">
+                        From
+                    </div>
+                    <div style="font-size:14px; font-weight:600;
+                                color:#e6edf3;">
+                        {{ tx['sender_name'] }}
+                    </div>
+                    <div style="font-size:11px; color:#8b949e;">
+                        @{{ tx['sender_username'] }}
+                    </div>
+                </div>
+
+                <div>
+                    <div style="font-size:10px; color:#484f58;
+                                text-transform:uppercase;
+                                letter-spacing:1px;
+                                margin-bottom:4px;">
+                        To
+                    </div>
+                    <div style="font-size:14px; font-weight:600;
+                                color:#e6edf3;">
+                        {{ tx['recipient_name'] }}
+                    </div>
+                </div>
+
+                <div>
+                    <div style="font-size:10px; color:#484f58;
+                                text-transform:uppercase;
+                                letter-spacing:1px;
+                                margin-bottom:4px;">
+                        Note
+                    </div>
+                    <div style="font-size:13px; color:#8b949e;">
+                        {{ tx['note'] or '—' }}
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Rejection reason if rejected -->
+            {% if tx['rejection_reason'] %}
+            <div style="background:rgba(248,81,73,0.06);
+                        border:1px solid rgba(248,81,73,0.2);
+                        border-radius:8px;
+                        padding:12px 16px;
+                        font-size:13px;
+                        color:#f85149;
+                        margin-bottom:16px;">
+                <strong>Rejection Reason:</strong>
+                {{ tx['rejection_reason'] }}
+            </div>
+            {% endif %}
+
+            <!-- Document status -->
+            {% if tx['document_requested'] %}
+            <div style="background:rgba(88,166,255,0.06);
+                        border:1px solid rgba(88,166,255,0.2);
+                        border-radius:8px;
+                        padding:12px 16px;
+                        font-size:13px;
+                        color:#58a6ff;
+                        margin-bottom:16px;
+                        display:flex;
+                        align-items:center;
+                        gap:10px;">
+                <i class="bi bi-file-earmark-text-fill"
+                   style="font-size:18px;"></i>
+                <span>
+                    Document requested.
+                    {% if tx['document_path'] %}
+                        <strong style="color:#3fb950;">
+                            ✅ Document uploaded by client.
+                        </strong>
+                    {% else %}
+                        <strong style="color:#d29922;">
+                            ⏳ Waiting for client to upload.
+                        </strong>
+                    {% endif %}
+                </span>
+            </div>
+            {% endif %}
+
+            <!-- Action buttons -->
+            {% if tx['status'] in ['pending_review', 'document_requested'] %}
+            <div style="display:flex;
+                        gap:10px;
+                        flex-wrap:wrap;
+                        align-items:flex-start;">
+
+                <!-- Approve -->
+                {% if tx['status'] == 'pending_review' or
+                     (tx['status'] == 'document_requested'
+                      and tx['document_path']) %}
+                <form method="POST"
+                      action="{{ url_for('approve_transaction',
+                                         tx_id=tx['id']) }}"
+                      onsubmit="return confirm(
+                        'Approve this transfer of ${{ '%.2f'|format(tx.amount) }}?')">
+                    <button type="submit"
+                            style="background:rgba(63,185,80,0.12);
+                                   color:#3fb950;
+                                   border:1px solid rgba(63,185,80,0.3);
+                                   border-radius:8px;
+                                   padding:8px 18px;
+                                   cursor:pointer;
+                                   font-size:13px;
+                                   font-weight:600;">
+                        <i class="bi bi-check2-circle me-1"></i>
+                        {% if tx['status'] == 'document_requested' %}
+                            Approve with Document
+                        {% else %}
+                            Approve Transfer
+                        {% endif %}
+                    </button>
+                </form>
+                {% endif %}
+
+                <!-- Request Document (only for pending) -->
+                {% if tx['status'] == 'pending_review' %}
+                <form method="POST"
+                      action="{{ url_for('request_document',
+                                         tx_id=tx['id']) }}"
+                      onsubmit="return confirm(
+                        'Request a document from the client?')">
+                    <button type="submit"
+                            style="background:rgba(88,166,255,0.1);
+                                   color:#58a6ff;
+                                   border:1px solid rgba(88,166,255,0.3);
+                                   border-radius:8px;
+                                   padding:8px 18px;
+                                   cursor:pointer;
+                                   font-size:13px;
+                                   font-weight:600;">
+                        <i class="bi bi-file-earmark-arrow-up me-1"></i>
+                        Request Document
+                    </button>
+                </form>
+                {% endif %}
+
+                <!-- Reject with reason -->
+                <form method="POST"
+                      action="{{ url_for('reject_transaction',
+                                         tx_id=tx['id']) }}"
+                      style="display:flex; gap:8px; align-items:center;"
+                      onsubmit="return this.querySelector('[name=reason]').value.trim() !== '' || (alert('Please enter a rejection reason') && false)">
+                    <input type="text"
+                           name="reason"
+                           placeholder="Rejection reason..."
+                           style="background:#1c2128;
+                                  border:1px solid #30363d;
+                                  border-radius:8px;
+                                  color:#e6edf3;
+                                  padding:8px 12px;
+                                  font-size:13px;
+                                  outline:none;
+                                  min-width:200px;"
+                           required>
+                    <button type="submit"
+                            style="background:rgba(248,81,73,0.12);
+                                   color:#f85149;
+                                   border:1px solid rgba(248,81,73,0.3);
+                                   border-radius:8px;
+                                   padding:8px 18px;
+                                   cursor:pointer;
+                                   font-size:13px;
+                                   font-weight:600;">
+                        <i class="bi bi-x-circle me-1"></i>
+                        Reject
+                    </button>
+                </form>
+
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+    {% endfor %}
+
+{% else %}
+<div style="background:#161b22;
+            border:1px solid #30363d;
+            border-radius:14px;
+            padding:60px 20px;
+            text-align:center;">
+    <i class="bi bi-bank2"
+       style="font-size:40px;
+              color:#484f58;
+              display:block;
+              margin-bottom:14px;"></i>
+    <p style="color:#8b949e; font-size:15px;">
+        {% if status_filter %}
+            No transactions match this filter
+        {% else %}
+            No transactions awaiting review
+        {% endif %}
+    </p>
+</div>
+{% endif %}
+
+{% endblock %}

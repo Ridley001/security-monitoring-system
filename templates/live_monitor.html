@@ -50,7 +50,7 @@
                      display:inline-block;"></span>
         <span id="webappLabel"
               style="font-size:13px; color:#8b949e;">
-            Authorized WebApp
+            TechCorp_Banking
         </span>
     </div>
 
@@ -177,10 +177,10 @@
             id="src-all" class="src-btn active-src">
         All Sources
     </button>
-    <button onclick="setSource('authorized_webapp')"
-            id="src-webapp" class="src-btn">
-        <i class="bi bi-globe me-1"></i>WebApp
-    </button>
+    <button onclick="setSource('techcorp_banking')"
+    id="src-banking" class="src-btn">
+<i class="bi bi-bank me-1"></i>Banking
+</button>
     <button onclick="setSource('wordpress')"
             id="src-wordpress" class="src-btn">
         <i class="bi bi-wordpress me-1"></i>WordPress
@@ -447,7 +447,7 @@ function setSource(src) {
     });
     const idMap = {
         '':                  'src-all',
-        'authorized_webapp': 'src-webapp',
+        'techcorp_banking':  'src-banking',
         'wordpress':         'src-wordpress',
         'uploaded':          'src-uploaded',
     };

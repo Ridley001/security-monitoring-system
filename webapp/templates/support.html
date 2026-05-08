@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechCorp Bank — Support</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/bank.css') }}" rel="stylesheet">
+</head>
+<body>
+
+<!-- App Navbar -->
+<nav class="app-navbar">
+    <a href="/" class="app-brand">
+        <div class="app-brand-icon">
+            <i class="bi bi-bank2"></i>
+        </div>
+        <span class="app-brand-name">
+            TechCorp <span>Bank</span>
+        </span>
+    </a>
+    <div class="app-nav-links">
+        <a href="{{ url_for('dashboard') }}"
+           class="app-nav-link">
+            <i class="bi bi-speedometer2"></i>Dashboard
+        </a>
+        <a href="{{ url_for('transfer') }}"
+           class="app-nav-link">
+            <i class="bi bi-send"></i>Transfer
+        </a>
+        <a href="{{ url_for('transactions') }}"
+           class="app-nav-link">
+            <i class="bi bi-list-ul"></i>Transactions
+        </a>
+        <a href="{{ url_for('cards') }}"
+           class="app-nav-link">
+            <i class="bi bi-credit-card"></i>Cards
+        </a>
+        <a href="{{ url_for('support') }}"
+           class="app-nav-link active">
+            <i class="bi bi-headset"></i>Support
+        </a>
+    </div>
+    <div class="app-user-menu">
+        <div class="app-avatar">{{ account.name[0] }}</div>
+        <div class="app-user-info">
+            <div class="app-user-name">
+                {{ account.name.split()[0] }}
+            </div>
+            <div class="app-user-role">
+                {{ account.account_type }}
+            </div>
+        </div>
+        <a href="{{ url_for('logout') }}" class="app-logout">
+            <i class="bi bi-box-arrow-right"></i>Logout
+        </a>
+    </div>
+</nav>
+
+<!-- Page body -->
+<div style="background:var(--gray-100);
+            min-height:calc(100vh - 64px);
+            padding:32px;">
+    <div style="max-width:1000px; margin:0 auto;">
+
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(
+            with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="app-alert {{ category }}">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span>{{ message }}</span>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="page-title">Support Center</div>
+        <div class="page-subtitle">
+            Raise a ticket and our team will respond
+            within 24 hours
+        </div>
+
+        <div style="display:grid;
+                    grid-template-columns:1.2fr 0.8fr;
+                    gap:24px;
+                    align-items:start;">
+
+            <!-- New ticket form -->
+            <div class="data-card">
+                <div class="data-card-header">
+                    <div class="data-card-title">
+                        <i class="bi bi-plus-circle-fill"></i>
+                        Raise New Ticket
+                    </div>
+                </div>
+                <div style="padding:24px;">
+
+                    <form method="POST"
+                          action="{{ url_for('support_post') }}">
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                Category
+                            </label>
+                            <select name="category"
+                                    class="form-control">
+                                <option value="general">
+                                    General Inquiry
+                                </option>
+                                <option value="transfer">
+                                    Transfer Issue
+                                </option>
+                                <option value="card">
+                                    Card Problem
+                                </option>
+                                <option value="account">
+                                    Account Access
+                                </option>
+                                <option value="fraud">
+                                    🚨 Report Fraud
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                Subject
+                            </label>
+                            <input type="text"
+                                   name="subject"
+                                   class="form-control"
+                                   placeholder="Brief description of your issue"
+                                   required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                Message
+                            </label>
+                            <textarea name="message"
+                                      class="form-control"
+                                      rows="6"
+                                      placeholder="Please describe your issue in detail..."
+                                      required
+                                      style="resize:vertical;"></textarea>
+                        </div>
+
+                        <button type="submit"
+                                class="btn-primary btn-primary-full">
+                            <i class="bi bi-send-fill"></i>
+                            Submit Ticket
+                        </button>
+
+                    </form>
+
+                </div>
+            </div>
+
+            <!-- Ticket history + info -->
+            <div style="display:flex;
+                        flex-direction:column;
+                        gap:16px;">
+
+                <!-- Quick help -->
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <div class="data-card-title">
+                            <i class="bi bi-lightning-fill"
+                               style="color:var(--warning);"></i>
+                            Quick Help
+                        </div>
+                    </div>
+                    <div style="padding:16px 20px;
+                                display:flex;
+                                flex-direction:column;
+                                gap:10px;">
+
+                        <div style="background:var(--gray-100);
+                                    border-radius:8px;
+                                    padding:12px 14px;
+                                    font-size:13px;">
+                            <div style="font-weight:600;
+                                        color:var(--text-primary);
+                                        margin-bottom:2px;">
+                                🔒 Lost or stolen card?
+                            </div>
+                            <div style="color:var(--text-secondary);">
+                                Go to Cards page and freeze
+                                your card immediately.
+                            </div>
+                        </div>
+
+                        <div style="background:var(--gray-100);
+                                    border-radius:8px;
+                                    padding:12px 14px;
+                                    font-size:13px;">
+                            <div style="font-weight:600;
+                                        color:var(--text-primary);
+                                        margin-bottom:2px;">
+                                💸 Wrong transfer?
+                            </div>
+                            <div style="color:var(--text-secondary);">
+                                Submit a fraud ticket
+                                immediately for investigation.
+                            </div>
+                        </div>
+
+                        <div style="background:var(--gray-100);
+                                    border-radius:8px;
+                                    padding:12px 14px;
+                                    font-size:13px;">
+                            <div style="font-weight:600;
+                                        color:var(--text-primary);
+                                        margin-bottom:2px;">
+                                🔑 Can't log in?
+                            </div>
+                            <div style="color:var(--text-secondary);">
+                                Contact your IT department
+                                for credential reset.
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- My tickets -->
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <div class="data-card-title">
+                            <i class="bi bi-ticket-perforated-fill"></i>
+                            My Tickets
+                        </div>
+                        <span style="font-size:12px;
+                                     color:var(--text-secondary);
+                                     font-weight:400;">
+                            {{ tickets|length }} ticket(s)
+                        </span>
+                    </div>
+
+                    <div style="padding:12px;">
+                        {% if tickets %}
+                        {% for ticket in tickets|reverse %}
+                        <div class="ticket-card">
+                            <div class="ticket-card-id">
+                                {{ ticket.ticket_ref }} •
+                                {{ ticket.category|capitalize }}
+                            </div>
+                            <div class="ticket-card-title">
+                                {{ ticket.subject }}
+                            </div>
+                            <div class="ticket-card-meta">
+                                <i class="bi bi-clock" style="font-size:10px;"></i>
+                                {{ ticket.date }}
+                                <span>•</span>
+                                {% if ticket.status == 'resolved' %}
+                                    <span class="badge badge-completed"
+                                          style="font-size:10px;">
+                                        ✅ Resolved
+                                    </span>
+                                {% elif ticket.status == 'in_progress' %}
+                                    <span class="badge badge-pending"
+                                          style="font-size:10px;">
+                                        ⟳ In Progress
+                                    </span>
+                                {% else %}
+                                    <span class="badge badge-debit"
+                                          style="font-size:10px;
+                                                 background:rgba(37,99,235,0.08);
+                                                 color:var(--blue-light);
+                                                 border:1px solid rgba(37,99,235,0.15);">
+                                        ● Open
+                                    </span>
+                                {% endif %}
+                            </div>
+                    
+                            <!-- Admin reply -->
+                            {% if ticket.admin_reply %}
+                            <div style="margin-top:10px;
+                                        background:rgba(5,150,105,0.05);
+                                        border:1px solid rgba(5,150,105,0.15);
+                                        border-radius:8px;
+                                        padding:10px 12px;
+                                        font-size:12px;">
+                                <div style="font-size:10px;
+                                            font-weight:700;
+                                            color:var(--success);
+                                            margin-bottom:4px;
+                                            text-transform:uppercase;
+                                            letter-spacing:0.5px;">
+                                    IT Support Reply:
+                                </div>
+                                <div style="color:var(--text-primary);
+                                            line-height:1.6;">
+                                    {{ ticket.admin_reply }}
+                                </div>
+                                {% if ticket.updated_at %}
+                                <div style="font-size:10px;
+                                            color:var(--text-secondary);
+                                            margin-top:6px;">
+                                    Replied: {{ ticket.updated_at[:16] }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                    
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div style="text-align:center;
+                                    padding:30px 20px;
+                                    color:var(--text-secondary);">
+                            <i class="bi bi-ticket"
+                               style="font-size:28px;
+                                      display:block;
+                                      margin-bottom:10px;
+                                      color:var(--gray-400);"></i>
+                            <div style="font-size:13px;">
+                                No tickets raised yet
+                            </div>
+                        </div>
+                    {% endif %}
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+{% block title %}IT Support{% endblock %}
+
+{% block page_title %}
+    <i class="bi bi-headset me-2"></i>TechCorp Bank IT Support
+{% endblock %}
+
+{% block content %}
+
+<div class="page-heading">
+    <h4>IT Support Center</h4>
+    <p>Manage and respond to support tickets from TechCorp Bank clients</p>
+</div>
+
+<!-- ── STAT CARDS ─────────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon blue">
+                <i class="bi bi-ticket-perforated-fill"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ total_tickets }}</h3>
+                <p>Total Tickets</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <a href="{{ url_for('it_support', status='open') }}"
+           style="text-decoration:none;">
+            <div class="stat-card">
+                <div class="stat-icon red">
+                    <i class="bi bi-envelope-open-fill"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ open_tickets }}</h3>
+                    <p>Open Tickets</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="{{ url_for('it_support', status='in_progress') }}"
+           style="text-decoration:none;">
+            <div class="stat-card">
+                <div class="stat-icon yellow">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ in_progress }}</h3>
+                    <p>In Progress</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="{{ url_for('it_support', status='resolved') }}"
+           style="text-decoration:none;">
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ resolved_tickets }}</h3>
+                    <p>Resolved</p>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- ── FILTERS ────────────────────────────────────────────── -->
+<div style="background:#161b22;
+            border:1px solid #30363d;
+            border-radius:14px;
+            margin-bottom:16px;
+            padding:16px 20px;">
+    <form method="GET" action="{{ url_for('it_support') }}">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label style="color:#8b949e; font-size:12px;
+                              display:block; margin-bottom:6px;">
+                    Filter by Status
+                </label>
+                <select name="status" class="form-select"
+                        style="background:#1c2128;
+                               border:1px solid #30363d;
+                               color:#e6edf3;">
+                    <option value="">All Statuses</option>
+                    <option value="open"
+                        {% if status_filter == 'open' %}selected{% endif %}>
+                        Open
+                    </option>
+                    <option value="in_progress"
+                        {% if status_filter == 'in_progress' %}selected{% endif %}>
+                        In Progress
+                    </option>
+                    <option value="resolved"
+                        {% if status_filter == 'resolved' %}selected{% endif %}>
+                        Resolved
+                    </option>
+                    <option value="closed"
+                        {% if status_filter == 'closed' %}selected{% endif %}>
+                        Closed
+                    </option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label style="color:#8b949e; font-size:12px;
+                              display:block; margin-bottom:6px;">
+                    Filter by Category
+                </label>
+                <select name="category" class="form-select"
+                        style="background:#1c2128;
+                               border:1px solid #30363d;
+                               color:#e6edf3;">
+                    <option value="">All Categories</option>
+                    <option value="general">General</option>
+                    <option value="transfer">Transfer Issue</option>
+                    <option value="card">Card Problem</option>
+                    <option value="account">Account Access</option>
+                    <option value="fraud">Fraud Report</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-purple w-100">
+                    <i class="bi bi-funnel me-1"></i>Filter
+                </button>
+            </div>
+            {% if status_filter or category_filter %}
+            <div class="col-md-2">
+                <a href="{{ url_for('it_support') }}"
+                   class="btn w-100"
+                   style="background:rgba(255,255,255,0.05);
+                          color:#8b949e;
+                          border:1px solid #30363d;">
+                    <i class="bi bi-x me-1"></i>Clear
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- ── TICKETS LIST ───────────────────────────────────────── -->
+{% if tickets %}
+    {% for ticket in tickets %}
+    {% set ticket_ref = ticket['ticket_ref'] %}
+
+    <div style="background:#161b22;
+                border:1px solid #30363d;
+                border-radius:14px;
+                margin-bottom:16px;
+                overflow:hidden;">
+
+        <!-- Ticket header -->
+        <div style="background:#1c2128;
+                    border-bottom:1px solid #30363d;
+                    padding:16px 20px;
+                    display:flex;
+                    align-items:center;
+                    justify-content:space-between;
+                    flex-wrap:wrap;
+                    gap:10px;">
+
+            <div style="display:flex;
+                        align-items:center;
+                        gap:12px;
+                        flex-wrap:wrap;">
+
+                <!-- Ticket ID -->
+                <code style="color:#7b6ff0;
+                             font-size:12px;
+                             background:rgba(123,111,240,0.1);
+                             padding:3px 10px;
+                             border-radius:6px;">
+                    {{ ticket_ref }}
+                </code>
+
+                <!-- Category badge -->
+                <span style="background:rgba(88,166,255,0.1);
+                             color:#58a6ff;
+                             border:1px solid rgba(88,166,255,0.2);
+                             padding:3px 10px;
+                             border-radius:6px;
+                             font-size:11px;
+                             font-weight:600;
+                             text-transform:uppercase;">
+                    {{ ticket['category'] }}
+                </span>
+
+                <!-- Status badge -->
+                {% if ticket['status'] == 'open' %}
+                    <span style="background:rgba(248,81,73,0.12);
+                                 color:#f85149;
+                                 border:1px solid rgba(248,81,73,0.25);
+                                 padding:3px 10px;
+                                 border-radius:6px;
+                                 font-size:11px;
+                                 font-weight:600;">
+                        ● Open
+                    </span>
+                {% elif ticket['status'] == 'in_progress' %}
+                    <span style="background:rgba(210,153,34,0.12);
+                                 color:#d29922;
+                                 border:1px solid rgba(210,153,34,0.25);
+                                 padding:3px 10px;
+                                 border-radius:6px;
+                                 font-size:11px;
+                                 font-weight:600;">
+                        ⟳ In Progress
+                    </span>
+                {% elif ticket['status'] == 'resolved' %}
+                    <span style="background:rgba(63,185,80,0.12);
+                                 color:#3fb950;
+                                 border:1px solid rgba(63,185,80,0.25);
+                                 padding:3px 10px;
+                                 border-radius:6px;
+                                 font-size:11px;
+                                 font-weight:600;">
+                        ✓ Resolved
+                    </span>
+                {% else %}
+                    <span style="background:rgba(139,148,158,0.12);
+                                 color:#8b949e;
+                                 border:1px solid rgba(139,148,158,0.25);
+                                 padding:3px 10px;
+                                 border-radius:6px;
+                                 font-size:11px;
+                                 font-weight:600;">
+                        Closed
+                    </span>
+                {% endif %}
+
+            </div>
+
+            <div style="font-size:12px; color:#8b949e;">
+                From: <strong style="color:#e6edf3;">
+                    {{ ticket['client_name'] }}
+                </strong>
+                ({{ ticket['username'] }}) •
+                {{ ticket['created_at'][:16] }}
+            </div>
+
+        </div>
+
+        <!-- Ticket body -->
+        <div style="padding:20px;">
+
+            <!-- Subject -->
+            <div style="font-size:16px;
+                        font-weight:700;
+                        color:#e6edf3;
+                        margin-bottom:10px;">
+                {{ ticket['subject'] }}
+            </div>
+
+            <!-- Message -->
+            <div style="background:#0d1117;
+                        border:1px solid #30363d;
+                        border-radius:8px;
+                        padding:14px 16px;
+                        font-size:13px;
+                        color:#8b949e;
+                        line-height:1.7;
+                        margin-bottom:16px;">
+                <div style="font-size:10px;
+                            color:#484f58;
+                            text-transform:uppercase;
+                            letter-spacing:1px;
+                            margin-bottom:6px;">
+                    Client Message:
+                </div>
+                {{ ticket['message'] }}
+            </div>
+
+            <!-- Admin reply (if exists) -->
+            {% if ticket['admin_reply'] %}
+            <div style="background:rgba(63,185,80,0.06);
+                        border:1px solid rgba(63,185,80,0.2);
+                        border-radius:8px;
+                        padding:14px 16px;
+                        font-size:13px;
+                        color:#e6edf3;
+                        line-height:1.7;
+                        margin-bottom:16px;">
+                <div style="font-size:10px;
+                            color:#3fb950;
+                            text-transform:uppercase;
+                            letter-spacing:1px;
+                            margin-bottom:6px;
+                            font-weight:700;">
+                    ✅ Admin Reply
+                    ({{ ticket['updated_at'][:16] }}):
+                </div>
+                {{ ticket['admin_reply'] }}
+            </div>
+            {% endif %}
+
+            <!-- Reply form -->
+            {% if ticket['status'] != 'closed' %}
+            <form method="POST"
+                  action="{{ url_for('it_support_respond',
+                                     ticket_id=ticket['id']) }}">
+
+                <div style="margin-bottom:12px;">
+                    <label style="font-size:12px;
+                                  color:#8b949e;
+                                  display:block;
+                                  margin-bottom:6px;">
+                        Your Reply to {{ ticket['client_name'] }}:
+                    </label>
+                    <textarea name="reply"
+                              rows="3"
+                              placeholder="Type your response here..."
+                              required
+                              style="width:100%;
+                                     background:#1c2128;
+                                     border:1px solid #30363d;
+                                     border-radius:8px;
+                                     padding:10px 14px;
+                                     color:#e6edf3;
+                                     font-size:13px;
+                                     resize:vertical;
+                                     outline:none;"></textarea>
+                </div>
+
+                <div style="display:flex;
+                            gap:10px;
+                            align-items:center;
+                            flex-wrap:wrap;">
+
+                    <select name="status"
+                            style="background:#1c2128;
+                                   border:1px solid #30363d;
+                                   border-radius:8px;
+                                   color:#e6edf3;
+                                   padding:8px 12px;
+                                   font-size:13px;
+                                   outline:none;">
+                        <option value="in_progress">
+                            Mark as In Progress
+                        </option>
+                        <option value="resolved">
+                            ✅ Mark as Resolved
+                        </option>
+                        <option value="closed">
+                            Close Ticket
+                        </option>
+                    </select>
+
+                    <button type="submit"
+                            class="btn btn-purple btn-sm">
+                        <i class="bi bi-send me-1"></i>
+                        Send Reply
+                    </button>
+
+                </div>
+            </form>
+            {% endif %}
+
+        </div>
+    </div>
+    {% endfor %}
+
+{% else %}
+<div style="background:#161b22;
+            border:1px solid #30363d;
+            border-radius:14px;
+            padding:60px 20px;
+            text-align:center;">
+    <i class="bi bi-ticket-perforated"
+       style="font-size:40px;
+              color:#484f58;
+              display:block;
+              margin-bottom:14px;"></i>
+    <p style="color:#8b949e; font-size:15px;">
+        {% if status_filter or category_filter %}
+            No tickets match your filters
+        {% else %}
+            No support tickets yet
+        {% endif %}
+    </p>
+</div>
+{% endif %}
+
+{% endblock %}

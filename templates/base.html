@@ -81,6 +81,20 @@
             Live Monitor
         </a>
 
+        <div class="sidebar-label">Banking</div>
+
+        <a href="{{ url_for('it_support') }}"
+           class="nav-link {% if request.endpoint == 'it_support' %}active{% endif %}">
+            <i class="bi bi-headset"></i>
+            IT Support
+        </a>
+
+        <a href="{{ url_for('banking_alerts') }}"
+           class="nav-link {% if request.endpoint == 'banking_alerts' %}active{% endif %}">
+            <i class="bi bi-bank2"></i>
+            Banking Alerts
+        </a>
+
         <div class="sidebar-label">Reports</div>
 
         <a href="{{ url_for('reports') }}"

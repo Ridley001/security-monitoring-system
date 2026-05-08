@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechCorp Bank — Transactions</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/bank.css') }}" rel="stylesheet">
+</head>
+<body>
+
+<!-- App Navbar -->
+<nav class="app-navbar">
+    <a href="/" class="app-brand">
+        <div class="app-brand-icon">
+            <i class="bi bi-bank2"></i>
+        </div>
+        <span class="app-brand-name">
+            TechCorp <span>Bank</span>
+        </span>
+    </a>
+    <div class="app-nav-links">
+        <a href="{{ url_for('dashboard') }}"
+           class="app-nav-link">
+            <i class="bi bi-speedometer2"></i>Dashboard
+        </a>
+        <a href="{{ url_for('transfer') }}"
+           class="app-nav-link">
+            <i class="bi bi-send"></i>Transfer
+        </a>
+        <a href="{{ url_for('transactions') }}"
+           class="app-nav-link active">
+            <i class="bi bi-list-ul"></i>Transactions
+        </a>
+        <a href="{{ url_for('cards') }}"
+           class="app-nav-link">
+            <i class="bi bi-credit-card"></i>Cards
+        </a>
+        <a href="{{ url_for('support') }}"
+           class="app-nav-link">
+            <i class="bi bi-headset"></i>Support
+        </a>
+    </div>
+    <div class="app-user-menu">
+        <div class="app-avatar">{{ account.name[0] }}</div>
+        <div class="app-user-info">
+            <div class="app-user-name">
+                {{ account.name.split()[0] }}
+            </div>
+            <div class="app-user-role">
+                {{ account.account_type }}
+            </div>
+        </div>
+        <a href="{{ url_for('logout') }}" class="app-logout">
+            <i class="bi bi-box-arrow-right"></i>Logout
+        </a>
+    </div>
+</nav>
+
+<!-- Page body -->
+<div style="background:var(--gray-100);
+            min-height:calc(100vh - 64px);
+            padding:32px;">
+    <div style="max-width:1000px; margin:0 auto;">
+
+        <div class="page-title">Transaction History</div>
+        <div class="page-subtitle">
+            All transactions for account
+            {{ account.account_number }}
+        </div>
+
+        <!-- Summary stats -->
+        <div class="stats-row" style="margin-bottom:24px;">
+
+            <div class="stat-card-app">
+                <div class="stat-card-icon blue">
+                    <i class="bi bi-receipt"></i>
+                </div>
+                <div>
+                    <div class="stat-card-value">
+                        {{ transactions|length }}
+                    </div>
+                    <div class="stat-card-label">
+                        Total Transactions
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card-app">
+                <div class="stat-card-icon green">
+                    <i class="bi bi-arrow-down-circle-fill"></i>
+                </div>
+                <div>
+                    <div class="stat-card-value"
+                         style="color:var(--success);">
+                        ${{ "%.2f"|format(
+                            transactions
+                            | selectattr('type','equalto','credit')
+                            | sum(attribute='amount')) }}
+                    </div>
+                    <div class="stat-card-label">
+                        Total Credits
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card-app">
+                <div class="stat-card-icon red">
+                    <i class="bi bi-arrow-up-circle-fill"></i>
+                </div>
+                <div>
+                    <div class="stat-card-value"
+                         style="color:var(--danger);">
+                        ${{ "%.2f"|format(
+                            transactions
+                            | selectattr('type','equalto','debit')
+                            | sum(attribute='amount')) }}
+                    </div>
+                    <div class="stat-card-label">
+                        Total Debits
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Transactions table -->
+        <div class="data-card">
+            <div class="data-card-header">
+                <div class="data-card-title">
+                    <i class="bi bi-list-ul"></i>
+                    All Transactions
+                </div>
+                <span style="font-size:12px;
+                             color:var(--text-secondary);
+                             font-weight:400;">
+                    {{ transactions|length }} record(s)
+                </span>
+            </div>
+
+            {% if transactions %}
+            <div style="overflow-x:auto;">
+                <table class="app-table">
+                    <thead>
+                        <tr>
+                            <th>Reference</th>
+                            <th>Description</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tx in transactions %}
+                        <tr>
+                            <td>
+                                <span style="font-family:monospace;
+                                             font-size:12px;
+                                             color:var(--blue-light);
+                                             background:rgba(37,99,235,0.06);
+                                             padding:3px 8px;
+                                             border-radius:6px;">
+                                    {{ tx.id }}
+                                </span>
+                            </td>
+                            <td style="font-weight:500;
+                                       color:var(--text-primary);">
+                                {{ tx.description }}
+                            </td>
+                            <td>
+                                {% if tx.type == 'credit' %}
+                                    <span class="badge badge-credit">
+                                        <i class="bi bi-arrow-down me-1"></i>Credit
+                                    </span>
+                                {% else %}
+                                    <span class="badge badge-debit">
+                                        <i class="bi bi-arrow-up me-1"></i>Debit
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span style="font-weight:700; font-size:14px;
+                                             color:{% if tx.type == 'credit' %}
+                                                 var(--success)
+                                             {% else %}
+                                                 var(--danger)
+                                             {% endif %};">
+                                    {% if tx.type == 'credit' %}+{% else %}−{% endif %}
+                                    ${{ "%.2f"|format(tx.amount) }}
+                                </span>
+                            </td>
+                            <td style="color:var(--text-secondary); font-size:13px;">
+                                {{ tx.date }}
+                            </td>
+                            <td>
+                                {% set tx_ref = tx.get('tx_ref', '') %}
+                                {% set live_status = pending_statuses.get(tx_ref, {}) %}
+                    
+                                {% if tx.status == 'under_review' or
+                                      tx.status == 'document_requested' %}
+                    
+                                    {% set sw_status = live_status.get('status', tx.status) %}
+                    
+                                    {% if sw_status == 'approved' %}
+                                        <span class="badge badge-completed">
+                                            ✅ Approved
+                                        </span>
+                                        <a href="{{ url_for('check_transaction_status',
+                                                            tx_ref=tx_ref) }}"
+                                           class="btn-primary"
+                                           style="padding:4px 10px;
+                                                  font-size:11px;
+                                                  margin-left:6px;">
+                                            Process
+                                        </a>
+                                    {% elif sw_status == 'rejected' %}
+                                        <span class="badge badge-debit">
+                                            🚫 Rejected
+                                        </span>
+                                        {% if live_status.get('rejection_reason') %}
+                                        <div style="font-size:11px;
+                                                    color:var(--danger);
+                                                    margin-top:4px;">
+                                            {{ live_status.rejection_reason }}
+                                        </div>
+                                        {% endif %}
+                                    {% elif sw_status == 'document_requested' %}
+                                        <span class="badge badge-pending">
+                                            📄 Document Required
+                                        </span>
+                                        <!-- Upload form -->
+                                        <form method="POST"
+                                              action="{{ url_for('upload_transaction_document',
+                                                                 tx_ref=tx_ref) }}"
+                                              enctype="multipart/form-data"
+                                              style="margin-top:8px;">
+                                            <div style="display:flex;
+                                                        gap:6px;
+                                                        align-items:center;">
+                                                <input type="file"
+                                                       name="document"
+                                                       accept=".pdf,.jpg,.png,.doc,.docx"
+                                                       style="font-size:11px;
+                                                              color:var(--text-secondary);
+                                                              max-width:160px;"
+                                                       required>
+                                                <button type="submit"
+                                                        style="background:rgba(37,99,235,0.1);
+                                                               color:var(--blue-light);
+                                                               border:1px solid rgba(37,99,235,0.2);
+                                                               border-radius:6px;
+                                                               padding:4px 10px;
+                                                               font-size:11px;
+                                                               cursor:pointer;">
+                                                    Upload
+                                                </button>
+                                            </div>
+                                        </form>
+                                    {% else %}
+                                        <span class="badge badge-pending">
+                                            ⏳ Under Review
+                                        </span>
+                                        <a href="{{ url_for('check_transaction_status',
+                                                            tx_ref=tx_ref) }}"
+                                           style="font-size:11px;
+                                                  color:var(--blue-light);
+                                                  text-decoration:none;
+                                                  display:block;
+                                                  margin-top:4px;">
+                                            Check Status ↗
+                                        </a>
+                                    {% endif %}
+                    
+                                {% elif tx.status == 'completed' %}
+                                    <span class="badge badge-completed">
+                                        ✓ Completed
+                                    </span>
+                                {% elif tx.status == 'rejected' %}
+                                    <span class="badge badge-debit">
+                                        🚫 Rejected
+                                    </span>
+                                {% else %}
+                                    <span class="badge badge-pending">
+                                        {{ tx.status|capitalize }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div style="text-align:center;
+                        padding:60px 20px;
+                        color:var(--text-secondary);">
+                <i class="bi bi-inbox"
+                   style="font-size:40px;
+                          display:block;
+                          margin-bottom:14px;
+                          color:var(--gray-400);"></i>
+                <div style="font-size:15px;
+                            font-weight:600;
+                            color:var(--text-primary);
+                            margin-bottom:6px;">
+                    No transactions yet
+                </div>
+                <div style="font-size:13px;">
+                    Your transactions will appear here
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
