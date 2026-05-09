@@ -132,18 +132,24 @@ def logout():
 def dashboard():
     db = get_db()
 
-    total_logs     = db.execute('SELECT COUNT(*) FROM logs').fetchone()[0]
+    total_logs     = db.execute(
+        'SELECT COUNT(*) FROM logs').fetchone()[0]
     total_alerts   = db.execute(
-        'SELECT COUNT(*) FROM alerts WHERE status = "open"').fetchone()[0]
-    total_blocked  = db.execute('SELECT COUNT(*) FROM blocked_ips').fetchone()[0]
+        'SELECT COUNT(*) FROM alerts '
+        'WHERE status = "open"').fetchone()[0]
+    total_blocked  = db.execute(
+        'SELECT COUNT(*) FROM blocked_ips').fetchone()[0]
     total_resolved = db.execute(
-        'SELECT COUNT(*) FROM alerts WHERE status = "resolved"').fetchone()[0]
+        'SELECT COUNT(*) FROM alerts '
+        'WHERE status = "resolved"').fetchone()[0]
     alert_count    = total_alerts
 
     recent_logs   = db.execute(
-        'SELECT * FROM logs ORDER BY timestamp DESC LIMIT 5').fetchall()
+        'SELECT * FROM logs '
+        'ORDER BY timestamp DESC LIMIT 5').fetchall()
     recent_alerts = db.execute(
-        'SELECT * FROM alerts ORDER BY timestamp DESC LIMIT 5').fetchall()
+        'SELECT * FROM alerts '
+        'ORDER BY timestamp DESC LIMIT 5').fetchall()
 
     chart_labels  = []
     chart_success = []
@@ -151,44 +157,58 @@ def dashboard():
 
     for i in range(6, -1, -1):
         day = db.execute('''
-            SELECT strftime('%m/%d', datetime('now', '-' || ? || ' days'))
+            SELECT strftime('%m/%d',
+            datetime('now', '-' || ? || ' days'))
         ''', (i,)).fetchone()[0]
         chart_labels.append(day)
 
         admin_success = db.execute('''
-            SELECT COUNT(*) FROM login_attempts WHERE success = 1
-            AND date(timestamp) = date('now', '-' || ? || ' days')
+            SELECT COUNT(*) FROM login_attempts
+            WHERE success = 1
+            AND date(timestamp) =
+            date('now', '-' || ? || ' days')
         ''', (i,)).fetchone()[0]
 
         webapp_success = db.execute('''
-            SELECT COUNT(*) FROM logs WHERE event_type = 'successful_login'
-            AND date(timestamp) = date('now', '-' || ? || ' days')
+            SELECT COUNT(*) FROM logs
+            WHERE event_type = 'successful_login'
+            AND date(timestamp) =
+            date('now', '-' || ? || ' days')
         ''', (i,)).fetchone()[0]
 
         admin_failed = db.execute('''
-            SELECT COUNT(*) FROM login_attempts WHERE success = 0
-            AND date(timestamp) = date('now', '-' || ? || ' days')
+            SELECT COUNT(*) FROM login_attempts
+            WHERE success = 0
+            AND date(timestamp) =
+            date('now', '-' || ? || ' days')
         ''', (i,)).fetchone()[0]
 
         webapp_failed = db.execute('''
-            SELECT COUNT(*) FROM logs WHERE event_type = 'failed_login'
-            AND date(timestamp) = date('now', '-' || ? || ' days')
+            SELECT COUNT(*) FROM logs
+            WHERE event_type = 'failed_login'
+            AND date(timestamp) =
+            date('now', '-' || ? || ' days')
         ''', (i,)).fetchone()[0]
 
         chart_success.append(admin_success + webapp_success)
         chart_failed.append(admin_failed + webapp_failed)
 
     alert_type_rows = db.execute('''
-        SELECT alert_type, COUNT(*) as cnt FROM alerts GROUP BY alert_type
+        SELECT alert_type, COUNT(*) as cnt
+        FROM alerts GROUP BY alert_type
     ''').fetchall()
 
-    alert_types  = [r['alert_type'] for r in alert_type_rows] or ['No Alerts']
-    alert_counts = [r['cnt'] for r in alert_type_rows] or [1]
-    # ── Banking stats ────────────────────────────────────────────
+    alert_types  = [r['alert_type']
+                    for r in alert_type_rows] or ['No Alerts']
+    alert_counts = [r['cnt']
+                    for r in alert_type_rows] or [1]
+
+    # ── Banking stats ─────────────────────────────────────────
     open_tickets = db.execute(
         'SELECT COUNT(*) FROM bank_tickets '
         'WHERE status = "open"').fetchone()[0]
-    pending_tx   = db.execute(
+
+    pending_tx = db.execute(
         'SELECT COUNT(*) FROM bank_transactions '
         'WHERE status = "pending_review"').fetchone()[0]
 
@@ -206,9 +226,9 @@ def dashboard():
                            chart_success=chart_success,
                            chart_failed=chart_failed,
                            alert_types=alert_types,
-                           alert_counts=alert_counts)
+                           alert_counts=alert_counts,
                            open_tickets=open_tickets,
-                           pending_tx=pending_tx,
+                           pending_tx=pending_tx)
 # ═══════════════════════════════════════════════════════════════
 #  ALERTS
 # ═══════════════════════════════════════════════════════════════
@@ -1044,7 +1064,7 @@ def generate_report():
         ]))
         elements.append(bt)
     else:
-        elements.append(Paragraph('No IPs are currently blocked.', style_body))\
+        elements.append(Paragraph('No IPs are currently blocked.', style_body))
         # ── Banking Activity Summary ───────────────────────────────
     elements.append(Spacer(1, 0.15*inch))
 
