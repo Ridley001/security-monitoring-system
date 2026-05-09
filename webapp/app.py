@@ -1,26 +1,24 @@
 from flask import (Flask, render_template, request,
-                   redirect, url_for, session, flash,
-                   jsonify)
+                   redirect, url_for, session, flash, jsonify)
 import requests
 from datetime import datetime
 import random
 import os
 
-# ── CREATE BANKING APP ───────────────────────────────────────────
 app = Flask(__name__)
 app.secret_key = 'techcorp_bank_secret_2024'
 
-# ── SECUREWATCH CONNECTION ────────────────────────────────────────
-MAIN_SYSTEM_URL     = 'http://127.0.0.1:5000/api/logs'
-MAIN_BLOCKED_URL    = 'http://127.0.0.1:5000/api/is-blocked'
-MAIN_TICKET_URL     = 'http://127.0.0.1:5000/api/banking/ticket'
-MAIN_TICKET_STATUS  = 'http://127.0.0.1:5000/api/banking/ticket-status'
-MAIN_TX_URL         = 'http://127.0.0.1:5000/api/banking/transaction'
-MAIN_TX_STATUS      = 'http://127.0.0.1:5000/api/banking/transaction-status'
-MAIN_TX_DOC_UPLOAD  = 'http://127.0.0.1:5000/api/banking/upload-document'
-API_KEY             = 'securewatch-api-key-2024'
+# ── SECUREWATCH URLS ─────────────────────────────────────────────
+MAIN_SYSTEM_URL    = 'http://127.0.0.1:5000/api/logs'
+MAIN_BLOCKED_URL   = 'http://127.0.0.1:5000/api/is-blocked'
+MAIN_TICKET_URL    = 'http://127.0.0.1:5000/api/banking/ticket'
+MAIN_TICKET_STATUS = 'http://127.0.0.1:5000/api/banking/ticket-status'
+MAIN_TX_URL        = 'http://127.0.0.1:5000/api/banking/transaction'
+MAIN_TX_STATUS     = 'http://127.0.0.1:5000/api/banking/transaction-status'
+MAIN_TX_DOC_UPLOAD = 'http://127.0.0.1:5000/api/banking/upload-document'
+API_KEY            = 'securewatch-api-key-2024'
 
-# ── ACCOUNT DATABASE ─────────────────────────────────────────────
+# ── ACCOUNTS ─────────────────────────────────────────────────────
 ACCOUNTS = {
     'john':  {'password': 'bank123',   'name': 'John Mensah',
                'account_number': 'TC-4521-8834', 'balance': 12450.00,
@@ -49,45 +47,70 @@ ACCOUNTS = {
 }
 
 TRANSACTIONS = {
-    'john':  [{'id': 'TXN001', 'type': 'credit', 'description': 'Salary Deposit',
-                'amount': 3500.00, 'date': '2024-05-01', 'status': 'completed'},
-               {'id': 'TXN002', 'type': 'debit',  'description': 'Online Shopping',
-                'amount': 120.50, 'date': '2024-05-02', 'status': 'completed'},
-               {'id': 'TXN003', 'type': 'debit',  'description': 'Restaurant Payment',
-                'amount': 45.00,  'date': '2024-05-03', 'status': 'completed'}],
-    'sarah': [{'id': 'TXN010', 'type': 'credit', 'description': 'Transfer Received',
-                'amount': 500.00, 'date': '2024-05-01', 'status': 'completed'},
-               {'id': 'TXN011', 'type': 'debit',  'description': 'Utility Bill',
-                'amount': 89.00,  'date': '2024-05-02', 'status': 'completed'}],
-    'mike':  [{'id': 'TXN020', 'type': 'credit', 'description': 'Business Revenue',
-                'amount': 8000.00,'date': '2024-05-01', 'status': 'completed'},
-               {'id': 'TXN021', 'type': 'debit',  'description': 'Supplier Payment',
-                'amount': 2500.00,'date': '2024-05-02', 'status': 'completed'}],
+    'john':  [
+        {'id': 'TXN001', 'type': 'credit',
+         'description': 'Salary Deposit',
+         'amount': 3500.00, 'date': '2024-05-01',
+         'status': 'completed', 'tx_ref': None},
+        {'id': 'TXN002', 'type': 'debit',
+         'description': 'Online Shopping',
+         'amount': 120.50, 'date': '2024-05-02',
+         'status': 'completed', 'tx_ref': None},
+        {'id': 'TXN003', 'type': 'debit',
+         'description': 'Restaurant Payment',
+         'amount': 45.00, 'date': '2024-05-03',
+         'status': 'completed', 'tx_ref': None},
+    ],
+    'sarah': [
+        {'id': 'TXN010', 'type': 'credit',
+         'description': 'Transfer Received',
+         'amount': 500.00, 'date': '2024-05-01',
+         'status': 'completed', 'tx_ref': None},
+        {'id': 'TXN011', 'type': 'debit',
+         'description': 'Utility Bill',
+         'amount': 89.00, 'date': '2024-05-02',
+         'status': 'completed', 'tx_ref': None},
+    ],
+    'mike':  [
+        {'id': 'TXN020', 'type': 'credit',
+         'description': 'Business Revenue',
+         'amount': 8000.00, 'date': '2024-05-01',
+         'status': 'completed', 'tx_ref': None},
+        {'id': 'TXN021', 'type': 'debit',
+         'description': 'Supplier Payment',
+         'amount': 2500.00, 'date': '2024-05-02',
+         'status': 'completed', 'tx_ref': None},
+    ],
     'admin': [],
 }
 
 TICKETS = {'john': [], 'sarah': [], 'mike': [], 'admin': []}
 
-# Pending transactions waiting for admin review
+# Stores pending large transfers keyed by tx_ref
+# Format: {tx_ref: {sender_username, recipient_key,
+#                   amount, note, recipient_name, date,
+#                   balance_deducted}}
 PENDING_TRANSACTIONS = {}
 
 # ═══════════════════════════════════════════════════════════════
 #  HELPERS
 # ═══════════════════════════════════════════════════════════════
 
-def send_log(ip_address, event_type, message):
+def send_log(ip, event_type, message):
     try:
         requests.post(MAIN_SYSTEM_URL,
-                      json={'ip_address': ip_address, 'event_type': event_type,
-                            'message': message, 'source': 'techcorp_banking'},
-                      headers={'X-API-Key': API_KEY, 'Content-Type': 'application/json'},
+                      json={'ip_address': ip, 'event_type': event_type,
+                            'message': message,
+                            'source': 'techcorp_banking'},
+                      headers={'X-API-Key': API_KEY,
+                               'Content-Type': 'application/json'},
                       timeout=3)
     except Exception as e:
-        print(f'Log send error: {e}')
+        print(f'Log error: {e}')
 
-def is_ip_blocked(ip_address):
+def is_ip_blocked(ip):
     try:
-        r = requests.get(MAIN_BLOCKED_URL, params={'ip': ip_address},
+        r = requests.get(MAIN_BLOCKED_URL, params={'ip': ip},
                          headers={'X-API-Key': API_KEY}, timeout=3)
         if r.status_code == 200:
             return r.json().get('blocked', False)
@@ -95,20 +118,20 @@ def is_ip_blocked(ip_address):
         pass
     return False
 
-def send_ticket_to_securewatch(ticket_data):
+def send_ticket(ticket_data):
     try:
         r = requests.post(MAIN_TICKET_URL, json=ticket_data,
                           headers={'X-API-Key': API_KEY,
                                    'Content-Type': 'application/json'},
                           timeout=3)
         return r.status_code == 201
-    except Exception as e:
-        print(f'Ticket send error: {e}')
+    except Exception:
         return False
 
 def get_ticket_status(ticket_ref):
     try:
-        r = requests.get(MAIN_TICKET_STATUS, params={'ref': ticket_ref},
+        r = requests.get(MAIN_TICKET_STATUS,
+                         params={'ref': ticket_ref},
                          headers={'X-API-Key': API_KEY}, timeout=3)
         if r.status_code == 200:
             return r.json()
@@ -116,15 +139,14 @@ def get_ticket_status(ticket_ref):
         pass
     return None
 
-def send_transaction_for_review(tx_data):
+def submit_transaction_for_review(tx_data):
     try:
         r = requests.post(MAIN_TX_URL, json=tx_data,
                           headers={'X-API-Key': API_KEY,
                                    'Content-Type': 'application/json'},
                           timeout=3)
         return r.status_code == 201
-    except Exception as e:
-        print(f'TX send error: {e}')
+    except Exception:
         return False
 
 def get_transaction_status(tx_ref):
@@ -150,14 +172,8 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated
 
-def get_account(username):
-    return ACCOUNTS.get(username)
-
-def get_transactions(username):
-    return TRANSACTIONS.get(username, [])
-
 # ═══════════════════════════════════════════════════════════════
-#  ROUTES
+#  AUTH ROUTES
 # ═══════════════════════════════════════════════════════════════
 
 @app.route('/')
@@ -174,32 +190,32 @@ def login():
 
 @app.route('/login', methods=['POST'])
 def login_post():
-    username   = request.form.get('username', '').strip()
-    password   = request.form.get('password', '').strip()
-    ip_address = request.remote_addr
+    username = request.form.get('username', '').strip()
+    password = request.form.get('password', '').strip()
+    ip       = request.remote_addr
 
-    if is_ip_blocked(ip_address):
-        send_log(ip_address, 'blocked_access',
-                 f'Blocked IP tried to access banking portal as "{username}"')
-        return render_template('blocked.html', ip_address=ip_address)
+    if is_ip_blocked(ip):
+        send_log(ip, 'blocked_access',
+                 f'Blocked IP tried banking portal as "{username}"')
+        return render_template('blocked.html', ip_address=ip)
 
     account = ACCOUNTS.get(username)
     if account and account['password'] == password:
         session['user'] = username
-        send_log(ip_address, 'successful_login',
-                 f'User "{account["name"]}" logged into banking portal')
+        send_log(ip, 'successful_login',
+                 f'User "{account["name"]}" logged in')
         flash(f'Welcome back, {account["name"]}!', 'success')
         return redirect(url_for('dashboard'))
     else:
-        send_log(ip_address, 'failed_login',
-                 f'Failed banking login for username: "{username}"')
+        send_log(ip, 'failed_login',
+                 f'Failed login for "{username}"')
         flash('Invalid username or password.', 'danger')
         return redirect(url_for('login'))
 
 @app.route('/logout')
 def logout():
-    username = session.get('user', 'Unknown')
-    account  = get_account(username)
+    username = session.get('user', '')
+    account  = ACCOUNTS.get(username)
     name     = account['name'] if account else username
     send_log(request.remote_addr, 'successful_login',
              f'User "{name}" logged out')
@@ -207,41 +223,52 @@ def logout():
     flash('You have been logged out securely.', 'success')
     return redirect(url_for('login'))
 
+# ═══════════════════════════════════════════════════════════════
+#  DASHBOARD
+# ═══════════════════════════════════════════════════════════════
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
     username = session['user']
-    account  = get_account(username)
-    txns     = get_transactions(username)
+    account  = ACCOUNTS[username]
+    txns     = TRANSACTIONS.get(username, [])
     send_log(request.remote_addr, 'page_visit',
              f'User "{account["name"]}" viewed dashboard')
     recent_txns = txns[-5:][::-1]
     total_in  = sum(t['amount'] for t in txns if t['type'] == 'credit')
     total_out = sum(t['amount'] for t in txns if t['type'] == 'debit')
-    return render_template('dashboard.html', account=account,
-                           username=username, recent_txns=recent_txns,
+    return render_template('dashboard.html',
+                           account=account, username=username,
+                           recent_txns=recent_txns,
                            total_in=total_in, total_out=total_out)
+
+# ═══════════════════════════════════════════════════════════════
+#  TRANSFER
+# ═══════════════════════════════════════════════════════════════
 
 @app.route('/transfer', methods=['GET'])
 @login_required
 def transfer():
     username = session['user']
-    account  = get_account(username)
+    account  = ACCOUNTS[username]
     send_log(request.remote_addr, 'page_visit',
              f'User "{account["name"]}" visited transfer page')
     recipients = {k: v for k, v in ACCOUNTS.items() if k != username}
-    # Get pending transactions for this user
-    user_pending = {ref: tx for ref, tx in PENDING_TRANSACTIONS.items()
-                    if tx['sender_username'] == username}
-    return render_template('transfer.html', account=account,
-                           username=username, recipients=recipients,
+    user_pending = {
+        ref: tx for ref, tx in PENDING_TRANSACTIONS.items()
+        if tx['sender_username'] == username
+    }
+    return render_template('transfer.html',
+                           account=account, username=username,
+                           recipients=recipients,
                            pending_transactions=user_pending)
 
 @app.route('/transfer', methods=['POST'])
 @login_required
 def transfer_post():
     username      = session['user']
-    account       = get_account(username)
+    account       = ACCOUNTS[username]
     ip            = request.remote_addr
     recipient_key = request.form.get('recipient', '').strip()
     amount_str    = request.form.get('amount', '0').strip()
@@ -250,7 +277,7 @@ def transfer_post():
     try:
         amount = float(amount_str)
     except ValueError:
-        flash('Invalid amount entered.', 'danger')
+        flash('Invalid amount.', 'danger')
         return redirect(url_for('transfer'))
 
     if amount <= 0:
@@ -260,8 +287,9 @@ def transfer_post():
     if amount > account['balance']:
         flash('Insufficient funds.', 'danger')
         send_log(ip, 'suspicious_activity',
-                 f'User "{account["name"]}" attempted transfer of '
-                 f'${amount:.2f} with insufficient funds')
+                 f'"{account["name"]}" attempted ${amount:.2f} '
+                 f'transfer with insufficient funds '
+                 f'(Balance: ${account["balance"]:.2f})')
         return redirect(url_for('transfer'))
 
     recipient = ACCOUNTS.get(recipient_key)
@@ -272,7 +300,7 @@ def transfer_post():
     tx_id = generate_tx_id()
     now   = datetime.now().strftime('%Y-%m-%d')
 
-    # ── LARGE TRANSFER → Send to SecureWatch for review ──────────
+    # ── LARGE TRANSFER (≥ $5,000) → Send for review ──────────────
     if amount >= 5000:
         tx_data = {
             'tx_ref':          tx_id,
@@ -284,10 +312,10 @@ def transfer_post():
             'ip_address':      ip,
         }
 
-        sent = send_transaction_for_review(tx_data)
+        sent = submit_transaction_for_review(tx_data)
 
         if sent:
-            # Store pending transaction locally
+            # ⚠️ DO NOT deduct balance yet — wait for approval
             PENDING_TRANSACTIONS[tx_id] = {
                 'sender_username': username,
                 'recipient_key':   recipient_key,
@@ -295,9 +323,10 @@ def transfer_post():
                 'note':            note,
                 'recipient_name':  recipient['name'],
                 'date':            now,
+                'balance_deducted': False,  # Track if balance deducted
             }
 
-            # Add to transactions as pending
+            # Add as pending in transaction history
             TRANSACTIONS[username].append({
                 'id':          tx_id,
                 'type':        'debit',
@@ -310,23 +339,23 @@ def transfer_post():
             })
 
             send_log(ip, 'suspicious_activity',
-                     f'LARGE TRANSFER FLAGGED: "{account["name"]}" '
-                     f'attempted ${amount:.2f} to "{recipient["name"]}" '
-                     f'— Sent to SecureWatch for review (Ref: {tx_id})')
+                     f'LARGE TRANSFER FLAGGED: '
+                     f'"{account["name"]}" → ${amount:.2f} → '
+                     f'"{recipient["name"]}" (Ref: {tx_id})')
 
             flash(
-                f'⚠️ Your transfer of ${amount:.2f} to '
-                f'{recipient["name"]} has been flagged for security '
-                f'review. Reference: {tx_id}. '
-                f'You will be notified once reviewed.',
+                f'⚠️ Transfer of ${amount:.2f} to '
+                f'{recipient["name"]} requires security review. '
+                f'Reference: {tx_id}',
                 'warning'
             )
         else:
-            flash('Transfer could not be processed. Please try again.', 'danger')
+            flash('Transfer failed. Please try again.', 'danger')
 
         return redirect(url_for('transactions'))
 
     # ── NORMAL TRANSFER → Process immediately ────────────────────
+    # Deduct from sender and credit recipient
     ACCOUNTS[username]['balance']      -= amount
     ACCOUNTS[recipient_key]['balance'] += amount
 
@@ -338,6 +367,7 @@ def transfer_post():
         'amount':      amount,
         'date':        now,
         'status':      'completed',
+        'tx_ref':      None,
     })
 
     if recipient_key in TRANSACTIONS:
@@ -349,89 +379,210 @@ def transfer_post():
             'amount':      amount,
             'date':        now,
             'status':      'completed',
+            'tx_ref':      None,
         })
 
     send_log(ip, 'fund_transfer',
              f'Transfer: "{account["name"]}" sent ${amount:.2f} '
              f'to "{recipient["name"]}" (Ref: {tx_id})')
 
-    flash(f'✅ Transfer of ${amount:.2f} to {recipient["name"]} '
-          f'was successful! Reference: {tx_id}', 'success')
+    flash(
+        f'✅ Transfer of ${amount:.2f} to {recipient["name"]} '
+        f'completed! Reference: {tx_id}',
+        'success'
+    )
     return redirect(url_for('transactions'))
+
+# ═══════════════════════════════════════════════════════════════
+#  TRANSACTIONS
+# ═══════════════════════════════════════════════════════════════
+
+@app.route('/transactions')
+@login_required
+def transactions():
+    username = session['user']
+    account  = ACCOUNTS[username]
+    txns     = TRANSACTIONS.get(username, [])
+
+    send_log(request.remote_addr, 'sensitive_access',
+             f'User "{account["name"]}" viewed transaction history')
+
+    # ── Check live status for ALL pending transactions ───────────
+    pending_statuses = {}
+    doc_request_txns = []   # Transactions needing document upload
+    pending_review_txns = []  # Transactions still under review
+
+    for tx in txns:
+        if tx.get('status') in [
+            'under_review', 'document_requested'
+        ]:
+            tx_ref = tx.get('tx_ref')
+            if tx_ref:
+                status_data = get_transaction_status(tx_ref)
+                if status_data:
+                    pending_statuses[tx_ref] = status_data
+                    sw_status = status_data.get('status', '')
+
+                    # Update local tx status to match SecureWatch
+                    tx['status'] = sw_status
+
+                    if sw_status == 'document_requested':
+                        # Check if document already uploaded
+                        doc_uploaded = status_data.get(
+                            'document_uploaded', False)
+                        if not doc_uploaded:
+                            doc_request_txns.append(tx)
+                        else:
+                            pending_review_txns.append(tx)
+
+                    elif sw_status == 'approved':
+                        # Auto-process if approved
+                        pending = PENDING_TRANSACTIONS.get(tx_ref)
+                        if pending and not pending.get(
+                                'balance_deducted'):
+                            _process_approved_transfer(
+                                username, tx_ref, tx)
+
+                    elif sw_status == 'pending_review':
+                        pending_review_txns.append(tx)
+
+    return render_template('transactions.html',
+                           account=account,
+                           username=username,
+                           transactions=txns[::-1],
+                           pending_statuses=pending_statuses,
+                           doc_request_txns=doc_request_txns,
+                           pending_review_txns=pending_review_txns)
+
+
+def _process_approved_transfer(username, tx_ref, tx_record):
+    """
+    Internal helper — process an approved transfer.
+    Deducts balance from sender and credits recipient.
+    Called automatically when status = approved.
+    """
+    pending = PENDING_TRANSACTIONS.get(tx_ref)
+    if not pending or pending.get('balance_deducted'):
+        return  # Already processed or not found
+
+    recipient_key = pending['recipient_key']
+    amount        = pending['amount']
+    account       = ACCOUNTS.get(username)
+    recipient     = ACCOUNTS.get(recipient_key)
+
+    if not account or not recipient:
+        return
+
+    # ── Deduct from sender ───────────────────────────────────────
+    ACCOUNTS[username]['balance']      -= amount
+    # ── Credit recipient ─────────────────────────────────────────
+    ACCOUNTS[recipient_key]['balance'] += amount
+
+    # ── Update transaction status ────────────────────────────────
+    tx_record['status'] = 'completed'
+
+    # ── Add credit to recipient's history ────────────────────────
+    if recipient_key in TRANSACTIONS:
+        # Avoid duplicate credit
+        already = any(t.get('tx_ref') == tx_ref + 'R'
+                      for t in TRANSACTIONS[recipient_key])
+        if not already:
+            TRANSACTIONS[recipient_key].append({
+                'id':          tx_ref + 'R',
+                'type':        'credit',
+                'description': f'Transfer from {account["name"]} '
+                               f'(Security Approved)',
+                'amount':      amount,
+                'date':        pending['date'],
+                'status':      'completed',
+                'tx_ref':      tx_ref + 'R',
+            })
+
+    # ── Mark as processed ────────────────────────────────────────
+    PENDING_TRANSACTIONS[tx_ref]['balance_deducted'] = True
+
+    print(f'✅ Transfer processed: ${amount:.2f} from '
+          f'{account["name"]} to {recipient["name"]}')
 
 
 @app.route('/check-transaction-status/<tx_ref>')
 @login_required
 def check_transaction_status(tx_ref):
-    """Check SecureWatch for transaction decision and process it."""
+    """Manual status check — redirects back with flash message."""
     username = session['user']
-    account  = get_account(username)
+    account  = ACCOUNTS[username]
     ip       = request.remote_addr
 
     status_data = get_transaction_status(tx_ref)
-
     if not status_data:
-        flash('Could not check transaction status.', 'danger')
+        flash('Could not reach SecureWatch. Try again.', 'danger')
         return redirect(url_for('transactions'))
 
     status = status_data.get('status')
 
-    # Find the transaction in local list
+    # Find local tx record
     user_txns = TRANSACTIONS.get(username, [])
-    tx_local  = next((t for t in user_txns if t.get('tx_ref') == tx_ref), None)
-    pending   = PENDING_TRANSACTIONS.get(tx_ref)
+    tx_local  = next(
+        (t for t in user_txns if t.get('tx_ref') == tx_ref),
+        None
+    )
 
-    if status == 'approved' and pending and tx_local:
-        if tx_local['status'] != 'completed':
-            # Process the transfer now
-            recipient_key = pending['recipient_key']
-            amount        = pending['amount']
-
-            ACCOUNTS[username]['balance']      -= amount
-            ACCOUNTS[recipient_key]['balance'] += amount
-
-            # Update status
-            tx_local['status'] = 'completed'
-
-            # Add to recipient
-            if recipient_key in TRANSACTIONS:
-                TRANSACTIONS[recipient_key].append({
-                    'id':          tx_ref + 'R',
-                    'type':        'credit',
-                    'description': f'Transfer from {account["name"]} '
-                                   f'(Approved by Security)',
-                    'amount':      amount,
-                    'date':        pending['date'],
-                    'status':      'completed',
-                })
-
-            # Remove from pending
-            PENDING_TRANSACTIONS.pop(tx_ref, None)
-
+    if status == 'approved':
+        pending = PENDING_TRANSACTIONS.get(tx_ref)
+        if pending and not pending.get('balance_deducted') \
+                and tx_local:
+            _process_approved_transfer(username, tx_ref, tx_local)
             send_log(ip, 'fund_transfer',
                      f'APPROVED TRANSFER PROCESSED: '
-                     f'${amount:.2f} from "{account["name"]}" '
-                     f'to "{pending["recipient_name"]}" (Ref: {tx_ref})')
-
-            flash(f'✅ Your transfer of ${amount:.2f} has been '
-                  f'approved and processed!', 'success')
+                     f'${pending["amount"]:.2f} from '
+                     f'"{account["name"]}" to '
+                     f'"{pending["recipient_name"]}" '
+                     f'(Ref: {tx_ref})')
+            flash(
+                f'✅ Transfer of '
+                f'${pending["amount"]:.2f} to '
+                f'{pending["recipient_name"]} has been '
+                f'approved and processed!',
+                'success'
+            )
+        else:
+            flash('Transfer already processed.', 'info')
 
     elif status == 'rejected':
         if tx_local:
             tx_local['status'] = 'rejected'
-        reason = status_data.get('rejection_reason', 'No reason provided')
-        flash(f'🚫 Your transfer {tx_ref} was rejected. '
-              f'Reason: {reason}', 'danger')
+        reason = status_data.get('rejection_reason',
+                                 'No reason given')
+        flash(
+            f'🚫 Transfer {tx_ref} was rejected. '
+            f'Reason: {reason}',
+            'danger'
+        )
 
     elif status == 'document_requested':
-        flash(f'📄 SecureWatch has requested a document for '
-              f'transaction {tx_ref}. Please upload your approval '
-              f'document below.', 'warning')
+        if tx_local:
+            tx_local['status'] = 'document_requested'
+        flash(
+            f'📄 SecureWatch has requested a document for '
+            f'transaction {tx_ref}. '
+            f'Please upload your document on this page.',
+            'warning'
+        )
 
     else:
-        flash(f'⏳ Transaction {tx_ref} is still under review. '
-              f'Please check back later.', 'info')
+        flash(
+            f'⏳ Transaction {tx_ref} is still under review.',
+            'info'
+        )
 
+    return redirect(url_for('transactions'))
+
+
+@app.route('/refresh-pending')
+@login_required
+def refresh_pending():
+    """Refresh all pending transaction statuses."""
+    flash('Transaction statuses refreshed.', 'info')
     return redirect(url_for('transactions'))
 
 
@@ -445,67 +596,59 @@ def upload_transaction_document(tx_ref):
         flash('Please select a document to upload.', 'danger')
         return redirect(url_for('transactions'))
 
+    # Find local tx and update status
+    username  = session['user']
+    user_txns = TRANSACTIONS.get(username, [])
+    tx_local  = next(
+        (t for t in user_txns if t.get('tx_ref') == tx_ref),
+        None
+    )
+
     try:
         r = requests.post(
             MAIN_TX_DOC_UPLOAD,
             data={'tx_ref': tx_ref},
-            files={'document': (file.filename, file.stream,
+            files={'document': (file.filename,
+                               file.stream,
                                file.content_type)},
             headers={'X-API-Key': API_KEY},
             timeout=10
         )
         if r.status_code == 200:
-            flash(f'✅ Document uploaded for transaction {tx_ref}. '
-                  f'SecureWatch admin will review it shortly.',
-                  'success')
+            if tx_local:
+                tx_local['status'] = 'document_uploaded'
+            flash(
+                f'✅ Document uploaded for {tx_ref}. '
+                f'SecureWatch admin will review and '
+                f'approve your transfer shortly.',
+                'success'
+            )
         else:
-            flash('Document upload failed. Please try again.', 'danger')
+            flash('Upload failed. Please try again.', 'danger')
     except Exception as e:
         flash(f'Upload error: {str(e)}', 'danger')
 
     return redirect(url_for('transactions'))
 
-
-@app.route('/transactions')
-@login_required
-def transactions():
-    username = session['user']
-    account  = get_account(username)
-    txns     = get_transactions(username)
-    send_log(request.remote_addr, 'sensitive_access',
-             f'User "{account["name"]}" viewed transaction history')
-
-    # Get status updates for pending transactions
-    pending_statuses = {}
-    for tx in txns:
-        if tx.get('status') in ['under_review', 'document_requested']:
-            tx_ref = tx.get('tx_ref')
-            if tx_ref:
-                status_data = get_transaction_status(tx_ref)
-                if status_data:
-                    pending_statuses[tx_ref] = status_data
-
-    return render_template('transactions.html',
-                           account=account,
-                           username=username,
-                           transactions=txns[::-1],
-                           pending_statuses=pending_statuses)
-
+# ═══════════════════════════════════════════════════════════════
+#  CARDS
+# ═══════════════════════════════════════════════════════════════
 
 @app.route('/cards')
 @login_required
 def cards():
     username = session['user']
-    account  = get_account(username)
+    account  = ACCOUNTS[username]
     send_log(request.remote_addr, 'sensitive_access',
              f'User "{account["name"]}" viewed card management')
-    return render_template('cards.html', account=account, username=username)
+    return render_template('cards.html',
+                           account=account, username=username)
 
 @app.route('/freeze-card', methods=['POST'])
 @login_required
 def freeze_card():
     username = session['user']
-    account  = get_account(username)
+    account  = ACCOUNTS[username]
     ACCOUNTS[username]['card_frozen'] = True
     send_log(request.remote_addr, 'card_freeze',
              f'User "{account["name"]}" FROZE their card')
@@ -516,41 +659,49 @@ def freeze_card():
 @login_required
 def unfreeze_card():
     username = session['user']
-    account  = get_account(username)
+    account  = ACCOUNTS[username]
     ACCOUNTS[username]['card_frozen'] = False
     send_log(request.remote_addr, 'card_unfreeze',
              f'User "{account["name"]}" UNFROZE their card')
     flash('✅ Your card has been unfrozen.', 'success')
     return redirect(url_for('cards'))
 
+# ═══════════════════════════════════════════════════════════════
+#  SUPPORT
+# ═══════════════════════════════════════════════════════════════
 
 @app.route('/support')
 @login_required
 def support():
     username = session['user']
-    account  = get_account(username)
+    account  = ACCOUNTS[username]
     tickets  = TICKETS.get(username, [])
+
     send_log(request.remote_addr, 'page_visit',
-             f'User "{account["name"]}" visited support page')
+             f'User "{account["name"]}" visited support')
 
-    # Check for updates on existing tickets
+    # Refresh ticket statuses from SecureWatch
     for ticket in tickets:
-        ref    = ticket.get('ticket_ref')
-        status = get_ticket_status(ref) if ref else None
-        if status:
-            ticket['status']      = status.get('status', ticket['status'])
-            ticket['admin_reply'] = status.get('admin_reply')
-            ticket['updated_at']  = status.get('updated_at')
+        ref = ticket.get('ticket_ref')
+        if ref:
+            status_data = get_ticket_status(ref)
+            if status_data:
+                old_status = ticket.get('status')
+                new_status = status_data.get('status', old_status)
+                ticket['status']      = new_status
+                ticket['admin_reply'] = status_data.get('admin_reply')
+                ticket['updated_at']  = status_data.get('updated_at')
 
-    return render_template('support.html', account=account,
-                           username=username, tickets=tickets)
-
+    return render_template('support.html',
+                           account=account,
+                           username=username,
+                           tickets=tickets)
 
 @app.route('/support', methods=['POST'])
 @login_required
 def support_post():
     username = session['user']
-    account  = get_account(username)
+    account  = ACCOUNTS[username]
     ip       = request.remote_addr
 
     subject  = request.form.get('subject',  '').strip()
@@ -564,7 +715,6 @@ def support_post():
     ticket_ref = 'TKT' + str(random.randint(10000, 99999))
     now        = datetime.now().strftime('%Y-%m-%d %H:%M')
 
-    # Send ticket to SecureWatch
     ticket_data = {
         'ticket_ref':  ticket_ref,
         'username':    username,
@@ -575,9 +725,8 @@ def support_post():
         'ip_address':  ip,
     }
 
-    sent = send_ticket_to_securewatch(ticket_data)
+    sent = send_ticket(ticket_data)
 
-    # Store locally
     if username not in TICKETS:
         TICKETS[username] = []
 
@@ -593,17 +742,21 @@ def support_post():
     })
 
     send_log(ip, 'page_visit',
-             f'User "{account["name"]}" raised support ticket '
+             f'"{account["name"]}" raised ticket '
              f'{ticket_ref}: "{subject}"')
 
     if sent:
-        flash(f'✅ Ticket {ticket_ref} submitted to IT Support! '
-              f'You will be notified when we respond.',
-              'success')
+        flash(
+            f'✅ Ticket {ticket_ref} submitted! '
+            f'IT Support will respond shortly.',
+            'success'
+        )
     else:
-        flash(f'✅ Ticket {ticket_ref} saved. Note: SecureWatch '
-              f'connection unavailable — ticket stored locally.',
-              'warning')
+        flash(
+            f'✅ Ticket {ticket_ref} saved locally. '
+            f'(SecureWatch connection unavailable)',
+            'warning'
+        )
 
     return redirect(url_for('support'))
 

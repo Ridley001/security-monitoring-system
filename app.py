@@ -184,6 +184,13 @@ def dashboard():
 
     alert_types  = [r['alert_type'] for r in alert_type_rows] or ['No Alerts']
     alert_counts = [r['cnt'] for r in alert_type_rows] or [1]
+    # ── Banking stats ────────────────────────────────────────────
+    open_tickets = db.execute(
+        'SELECT COUNT(*) FROM bank_tickets '
+        'WHERE status = "open"').fetchone()[0]
+    pending_tx   = db.execute(
+        'SELECT COUNT(*) FROM bank_transactions '
+        'WHERE status = "pending_review"').fetchone()[0]
 
     db.close()
 
@@ -200,7 +207,8 @@ def dashboard():
                            chart_failed=chart_failed,
                            alert_types=alert_types,
                            alert_counts=alert_counts)
-
+                           open_tickets=open_tickets,
+                           pending_tx=pending_tx,
 # ═══════════════════════════════════════════════════════════════
 #  ALERTS
 # ═══════════════════════════════════════════════════════════════
@@ -892,6 +900,31 @@ def generate_report():
     logs_data    = db.execute('SELECT * FROM logs WHERE date(timestamp) BETWEEN ? AND ? ORDER BY timestamp DESC', (date_from, date_to)).fetchall()
     alerts_data  = db.execute('SELECT * FROM alerts WHERE date(timestamp) BETWEEN ? AND ? ORDER BY timestamp DESC', (date_from, date_to)).fetchall()
     blocked_data = db.execute('SELECT * FROM blocked_ips ORDER BY blocked_at DESC').fetchall()
+    # Banking data for report
+    bank_tickets_data = db.execute('''
+        SELECT * FROM bank_tickets
+        WHERE date(created_at) BETWEEN ? AND ?
+        ORDER BY created_at DESC
+    ''', (date_from, date_to)).fetchall()
+
+    bank_tx_data = db.execute('''
+        SELECT * FROM bank_transactions
+        WHERE date(created_at) BETWEEN ? AND ?
+        ORDER BY created_at DESC
+    ''', (date_from, date_to)).fetchall()
+
+    total_bank_tickets   = len(bank_tickets_data)
+    resolved_bank_tickets = sum(
+        1 for t in bank_tickets_data if t['status'] == 'resolved')
+    approved_tx   = sum(
+        1 for t in bank_tx_data if t['status'] == 'approved')
+    rejected_tx   = sum(
+        1 for t in bank_tx_data if t['status'] == 'rejected')
+    pending_tx    = sum(
+        1 for t in bank_tx_data if t['status'] == 'pending_review')
+    total_tx_amount = sum(
+        t['amount'] for t in bank_tx_data
+        if t['status'] == 'approved')
     db.close()
 
     total_logs        = len(logs_data)
@@ -1011,7 +1044,85 @@ def generate_report():
         ]))
         elements.append(bt)
     else:
-        elements.append(Paragraph('No IPs are currently blocked.', style_body))
+        elements.append(Paragraph('No IPs are currently blocked.', style_body))\
+        # ── Banking Activity Summary ───────────────────────────────
+    elements.append(Spacer(1, 0.15*inch))
+
+    elements.append(
+        Paragraph('5. Banking Activity Summary',
+                  style_section)
+    )
+
+    bank_summary = [
+        ['Metric', 'Value', 'Metric', 'Value'],
+
+        ['Support Tickets',
+         str(total_bank_tickets),
+         'Tickets Resolved',
+         str(resolved_bank_tickets)],
+
+        ['Transactions Reviewed',
+         str(len(bank_tx_data)),
+         'Approved TX',
+         str(approved_tx)],
+
+        ['Rejected TX',
+         str(rejected_tx),
+         'Pending TX',
+         str(pending_tx)],
+
+        ['Approved Amount',
+         f'${total_tx_amount:,.2f}',
+         '',
+         ''],
+    ]
+
+    bs = Table(
+        bank_summary,
+        colWidths=[4.5*cm, 3*cm, 4.5*cm, 3*cm]
+    )
+
+    bs.setStyle(TableStyle([
+        ('BACKGROUND',
+         (0,0), (-1,0),
+         colors.HexColor('#1e3a8a')),
+
+        ('TEXTCOLOR',
+         (0,0), (-1,0),
+         colors.white),
+
+        ('FONTNAME',
+         (0,0), (-1,0),
+         'Helvetica-Bold'),
+
+        ('FONTSIZE',
+         (0,0), (-1,-1),
+         9),
+
+        ('ALIGN',
+         (0,0), (-1,-1),
+         'CENTER'),
+
+        ('ROWBACKGROUNDS',
+         (0,1), (-1,-1),
+         [colors.HexColor('#f0f4ff'),
+          colors.white]),
+
+        ('GRID',
+         (0,0), (-1,-1),
+         0.5,
+         colors.HexColor('#dddddd')),
+
+        ('TOPPADDING',
+         (0,0), (-1,-1),
+         6),
+
+        ('BOTTOMPADDING',
+         (0,0), (-1,-1),
+         6),
+    ]))
+
+    elements.append(bs)
 
     elements.append(Spacer(1, 0.2*inch))
     elements.append(HRFlowable(width='100%', thickness=1, color=colors.HexColor('#cccccc')))

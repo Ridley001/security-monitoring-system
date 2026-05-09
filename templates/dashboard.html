@@ -16,7 +16,7 @@
 <!-- ── ROW 1: STAT CARDS ──────────────────────────────────── -->
 <div class="row g-4 mb-4">
 
-    <div class="col-md-3">
+    <div class="col-md-2">
         <div class="stat-card">
             <div class="stat-icon blue">
                 <i class="bi bi-journal-text"></i>
@@ -25,13 +25,13 @@
                 <h3>{{ total_logs }}</h3>
                 <p>Total Logs</p>
                 <div class="stat-trend up">
-                    <i class="bi bi-arrow-up"></i> Live tracking
+                    <i class="bi bi-arrow-up"></i> Live
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="col-md-3">
+    <div class="col-md-2">
         <div class="stat-card">
             <div class="stat-icon red">
                 <i class="bi bi-exclamation-triangle-fill"></i>
@@ -40,13 +40,13 @@
                 <h3>{{ total_alerts }}</h3>
                 <p>Open Alerts</p>
                 <div class="stat-trend up">
-                    <i class="bi bi-arrow-up"></i> Needs attention
+                    <i class="bi bi-arrow-up"></i> Threats
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="col-md-3">
+    <div class="col-md-2">
         <div class="stat-card">
             <div class="stat-icon yellow">
                 <i class="bi bi-slash-circle-fill"></i>
@@ -55,13 +55,13 @@
                 <h3>{{ total_blocked }}</h3>
                 <p>Blocked IPs</p>
                 <div class="stat-trend down">
-                    <i class="bi bi-shield-check"></i> Protected
+                    <i class="bi bi-shield-check"></i> Safe
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="col-md-3">
+    <div class="col-md-2">
         <div class="stat-card">
             <div class="stat-icon green">
                 <i class="bi bi-check-circle-fill"></i>
@@ -70,10 +70,46 @@
                 <h3>{{ total_resolved }}</h3>
                 <p>Resolved Alerts</p>
                 <div class="stat-trend down">
-                    <i class="bi bi-check2"></i> All clear
+                    <i class="bi bi-check2"></i> Clear
                 </div>
             </div>
         </div>
+    </div>
+
+    <div class="col-md-2">
+        <a href="{{ url_for('it_support') }}"
+           style="text-decoration:none;">
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <i class="bi bi-headset"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ open_tickets }}</h3>
+                    <p>Open Tickets</p>
+                    <div class="stat-trend up">
+                        <i class="bi bi-arrow-right"></i> View
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-2">
+        <a href="{{ url_for('banking_alerts') }}"
+           style="text-decoration:none;">
+            <div class="stat-card">
+                <div class="stat-icon yellow">
+                    <i class="bi bi-bank2"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ pending_tx }}</h3>
+                    <p>Pending TX</p>
+                    <div class="stat-trend up">
+                        <i class="bi bi-arrow-right"></i> Review
+                    </div>
+                </div>
+            </div>
+        </a>
     </div>
 
 </div>
