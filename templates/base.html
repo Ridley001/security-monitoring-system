@@ -102,7 +102,11 @@
             <i class="bi bi-file-earmark-pdf-fill"></i>
             Generate Report
         </a>
-
+        <a href="{{ url_for('email_settings') }}"
+        class="nav-link {% if request.endpoint == 'email_settings' %}active{% endif %}">
+         <i class="bi bi-envelope-fill"></i>
+         Email Alerts
+     </a>
     </nav>
 
     <div class="sidebar-footer">

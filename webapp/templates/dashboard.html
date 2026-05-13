@@ -121,7 +121,7 @@
         {% endwith %}
 
         <div class="page-title">
-            Good day, {{ account.name.split()[0] }} 👋
+            Hi, {{ account.name.split()[0] }} 
         </div>
         <div class="page-subtitle">
             Here's your financial overview for today
@@ -135,7 +135,7 @@
                         Available Balance
                     </div>
                     <div class="balance-amount-large">
-                        <span class="currency">$</span>
+                        <span class="currency">FCFA</span>
                         {{ "%.2f"|format(account.balance) }}
                     </div>
                     <div class="balance-account-num">
@@ -199,7 +199,7 @@
                 <div>
                     <div class="stat-card-value"
                          style="color:var(--success);">
-                        ${{ "%.2f"|format(total_in) }}
+                        FCFA{{ "%.2f"|format(total_in) }}
                     </div>
                     <div class="stat-card-label">
                         Total Money In
@@ -214,7 +214,7 @@
                 <div>
                     <div class="stat-card-value"
                          style="color:var(--danger);">
-                        ${{ "%.2f"|format(total_out) }}
+                        FCFA{{ "%.2f"|format(total_out) }}
                     </div>
                     <div class="stat-card-label">
                         Total Money Out
@@ -275,7 +275,7 @@
                         </div>
                         <div class="tx-amount-text {{ tx.type }}">
                             {% if tx.type == 'credit' %}+{% else %}−{% endif %}
-                            ${{ "%.2f"|format(tx.amount) }}
+                            FCFA{{ "%.2f"|format(tx.amount) }}
                         </div>
                     </div>
                     {% endfor %}

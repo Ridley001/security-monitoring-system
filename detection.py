@@ -1,190 +1,185 @@
 from database import get_db
+from datetime import datetime, timedelta
 
-# ═══════════════════════════════════════════════════════════════
-#  DETECTION ENGINE
-#  Runs after every log is inserted.
-#  Checks all rules and creates alerts automatically.
-# ═══════════════════════════════════════════════════════════════
 
 def run_detection(ip_address, event_type):
     """
-    Main detection function.
-    Call this every time a new log is inserted.
-    It checks all rules and creates alerts if threats are found.
-    """
-    check_brute_force(ip_address)
-    check_blocked_ip_activity(ip_address)
-    check_suspicious_activity(ip_address, event_type)
-    check_wordpress_brute_force(ip_address)
-
-
-# ── RULE 1: BRUTE FORCE DETECTION ───────────────────────────────
-def check_brute_force(ip_address):
-    """
-    Rule: If the same IP has more than 5 failed logins
-    in the last 60 seconds → create a Brute Force alert.
+    Run all detection rules against the latest activity.
+    Creates alerts and triggers email notifications when
+    threats are detected.
     """
     db = get_db()
 
-    # Count failed logins from this IP in last 60 seconds
-    count = db.execute('''
+    # ── RULE 1: Brute Force ──────────────────────────────────────
+    # 5+ failed logins from same IP in 60 seconds
+    failed_count = db.execute('''
         SELECT COUNT(*) FROM logs
         WHERE ip_address = ?
-        AND   event_type = 'failed_login'
-        AND   timestamp >= datetime('now', '-60 seconds')
+        AND event_type   = 'failed_login'
+        AND timestamp    >= datetime('now', '-60 seconds')
     ''', (ip_address,)).fetchone()[0]
 
-    if count >= 5:
-        # Check if we already have an OPEN brute force alert
-        # for this IP — avoid creating duplicate alerts
-        existing = db.execute('''
+    if failed_count >= 5:
+        already = db.execute('''
             SELECT id FROM alerts
             WHERE ip_address = ?
-            AND   alert_type = 'Brute Force Attack'
-            AND   status     = 'open'
-            AND   timestamp >= datetime('now', '-60 seconds')
+            AND alert_type   = 'Brute Force Attack'
+            AND timestamp    >= datetime('now', '-5 minutes')
         ''', (ip_address,)).fetchone()
 
-        if not existing:
+        if not already:
             db.execute('''
                 INSERT INTO alerts
-                    (ip_address, alert_type, description, severity, status)
-                VALUES (?, ?, ?, ?, ?)
+                    (ip_address, alert_type, severity, message)
+                VALUES (?, ?, ?, ?)
             ''', (
                 ip_address,
                 'Brute Force Attack',
-                f'IP {ip_address} had {count} failed login attempts '
-                f'within 60 seconds. Possible brute force attack.',
                 'high',
-                'open'
+                f'{failed_count} failed login attempts '
+                f'from {ip_address} in 60 seconds.'
             ))
             db.commit()
-            print(f'🚨 ALERT: Brute Force detected from {ip_address}')
+            _notify(
+                ip_address,
+                'Brute Force Attack',
+                'high',
+                f'{failed_count} failed login attempts '
+                f'in 60 seconds'
+            )
 
-    db.close()
-
-
-# ── RULE 2: BLOCKED IP ACTIVITY ──────────────────────────────────
-def check_blocked_ip_activity(ip_address):
-    """
-    Rule: If a blocked IP sends any log at all
-    → create a Blocked IP Activity alert.
-    """
-    db = get_db()
-
-    # Check if this IP is in the blocked list
+    # ── RULE 2: Blocked IP Activity ──────────────────────────────
     is_blocked = db.execute('''
         SELECT id FROM blocked_ips
         WHERE ip_address = ?
     ''', (ip_address,)).fetchone()
 
     if is_blocked:
-        # Avoid duplicate alerts for same IP in last 5 minutes
-        existing = db.execute('''
+        already = db.execute('''
             SELECT id FROM alerts
             WHERE ip_address = ?
-            AND   alert_type = 'Blocked IP Activity'
-            AND   status     = 'open'
-            AND   timestamp >= datetime('now', '-5 minutes')
+            AND alert_type   = 'Blocked IP Activity'
+            AND timestamp    >= datetime('now', '-10 minutes')
         ''', (ip_address,)).fetchone()
 
-        if not existing:
+        if not already:
             db.execute('''
                 INSERT INTO alerts
-                    (ip_address, alert_type, description, severity, status)
-                VALUES (?, ?, ?, ?, ?)
+                    (ip_address, alert_type, severity, message)
+                VALUES (?, ?, ?, ?)
             ''', (
                 ip_address,
                 'Blocked IP Activity',
-                f'Blocked IP {ip_address} is still sending requests. '
-                f'This IP was previously blocked by an admin.',
                 'high',
-                'open'
+                f'Blocked IP {ip_address} is still '
+                f'attempting to access the system.'
             ))
             db.commit()
-            print(f'🚨 ALERT: Blocked IP activity detected from {ip_address}')
+            _notify(
+                ip_address,
+                'Blocked IP Activity',
+                'high',
+                f'Blocked IP {ip_address} is attempting '
+                f'access'
+            )
 
-    db.close()
-
-
-# ── RULE 3: SUSPICIOUS ACTIVITY ──────────────────────────────────
-def check_suspicious_activity(ip_address, event_type):
-    """
-    Rule: If any log has event_type = suspicious_activity
-    → create a Suspicious Activity alert.
-    """
-    if event_type != 'suspicious_activity':
-        return
-
-    db = get_db()
-
-    # Avoid duplicate alerts for same IP in last 5 minutes
-    existing = db.execute('''
-        SELECT id FROM alerts
-        WHERE ip_address = ?
-        AND   alert_type = 'Suspicious Activity'
-        AND   status     = 'open'
-        AND   timestamp >= datetime('now', '-5 minutes')
-    ''', (ip_address,)).fetchone()
-
-    if not existing:
-        db.execute('''
-            INSERT INTO alerts
-                (ip_address, alert_type, description, severity, status)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (
-            ip_address,
-            'Suspicious Activity',
-            f'Suspicious activity detected from IP {ip_address}. '
-            f'Manual review recommended.',
-            'medium',
-            'open'
-        ))
-        db.commit()
-        print(f'⚠️  ALERT: Suspicious activity from {ip_address}')
-
-    db.close()
-
-# ── RULE 4: MULTIPLE FAILED LOGINS FROM WORDPRESS ────────────────
-def check_wordpress_brute_force(ip_address):
-    """
-    Same as brute force but specifically checks
-    for WordPress login attacks.
-    """
-    db = get_db()
-
-    count = db.execute('''
-        SELECT COUNT(*) FROM logs
-        WHERE ip_address = ?
-        AND   event_type = 'failed_login'
-        AND   source     = 'wordpress'
-        AND   timestamp >= datetime('now', '-60 seconds')
-    ''', (ip_address,)).fetchone()[0]
-
-    if count >= 3:
-        existing = db.execute('''
+    # ── RULE 3: Suspicious Activity ──────────────────────────────
+    if event_type == 'suspicious_activity':
+        already = db.execute('''
             SELECT id FROM alerts
             WHERE ip_address = ?
-            AND   alert_type = 'WordPress Brute Force'
-            AND   status     = 'open'
-            AND   timestamp >= datetime('now', '-60 seconds')
+            AND alert_type   = 'Suspicious Activity'
+            AND timestamp    >= datetime('now', '-5 minutes')
         ''', (ip_address,)).fetchone()
 
-        if not existing:
+        if not already:
+            # Get the latest message for context
+            latest = db.execute('''
+                SELECT message FROM logs
+                WHERE ip_address = ?
+                AND event_type   = 'suspicious_activity'
+                ORDER BY timestamp DESC LIMIT 1
+            ''', (ip_address,)).fetchone()
+            msg = latest['message'] if latest else \
+                f'Suspicious activity from {ip_address}'
+
             db.execute('''
                 INSERT INTO alerts
-                    (ip_address, alert_type,
-                     description, severity, status)
-                VALUES (?, ?, ?, ?, ?)
+                    (ip_address, alert_type, severity, message)
+                VALUES (?, ?, ?, ?)
             ''', (
                 ip_address,
-                'WordPress Brute Force',
-                f'IP {ip_address} made {count} failed '
-                f'WordPress login attempts in 60 seconds.',
-                'high',
-                'open'
+                'Suspicious Activity',
+                'medium',
+                msg
             ))
             db.commit()
-            print(f'🚨 WordPress Brute Force from {ip_address}')
+            _notify(
+                ip_address,
+                'Suspicious Activity',
+                'medium',
+                msg
+            )
+
+    # ── RULE 4: Large Transfer Flag ───────────────────────────────
+    if event_type == 'suspicious_activity':
+        latest_log = db.execute('''
+            SELECT message FROM logs
+            WHERE ip_address = ?
+            AND event_type   = 'suspicious_activity'
+            ORDER BY timestamp DESC LIMIT 1
+        ''', (ip_address,)).fetchone()
+
+        if latest_log and 'LARGE TRANSFER' in (
+                latest_log['message'] or ''):
+            already = db.execute('''
+                SELECT id FROM alerts
+                WHERE ip_address = ?
+                AND alert_type   = 'Large Transfer Alert'
+                AND timestamp    >= datetime('now',
+                                            '-2 minutes')
+            ''', (ip_address,)).fetchone()
+
+            if not already:
+                db.execute('''
+                    INSERT INTO alerts
+                        (ip_address, alert_type,
+                         severity, message)
+                    VALUES (?, ?, ?, ?)
+                ''', (
+                    ip_address,
+                    'Large Transfer Alert',
+                    'high',
+                    latest_log['message']
+                ))
+                db.commit()
+                _notify(
+                    ip_address,
+                    'Large Transfer Alert',
+                    'high',
+                    latest_log['message']
+                )
 
     db.close()
+
+
+def _notify(ip_address, alert_type, severity, message):
+    """
+    Import and call the email function from app context.
+    Uses lazy import to avoid circular imports.
+    """
+    try:
+        from app import send_email_notification
+        subject = (
+            f'🚨 SecureWatch Alert: '
+            f'{alert_type} — {severity.upper()}'
+        )
+        send_email_notification(
+            subject    = subject,
+            body       = message,
+            alert_type = alert_type,
+            severity   = severity,
+            ip_address = ip_address
+        )
+    except Exception as e:
+        print(f'Notification error: {e}')

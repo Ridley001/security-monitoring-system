@@ -134,7 +134,7 @@
                                 Limit
                             </div>
                             <div class="card-info-value">
-                                ${{ "%.0f"|format(
+                                FCFA{{ "%.0f"|format(
                                     account.card_limit) }}
                             </div>
                         </div>
@@ -254,6 +254,19 @@
                                 {{ account.card_expiry }}
                             </span>
                         </div>
+                        <div style="display:flex;
+                        align-items:center;
+                        justify-content:space-between;
+                        padding:14px 22px;
+                        border-bottom:1px solid var(--gray-100);
+                        font-size:13px;">
+                <span style="color:var(--text-secondary);">
+                    CVV
+                </span>
+                <span style="font-weight:600;">
+                    465
+                </span>
+            </div>
 
                         <div style="display:flex;
                                     align-items:center;
@@ -265,7 +278,7 @@
                                 Daily Limit
                             </span>
                             <span style="font-weight:600;">
-                                ${{ "%.2f"|format(account.card_limit) }}
+                                FCFA{{ "%.2f"|format(account.card_limit) }}
                             </span>
                         </div>
 

@@ -17,7 +17,10 @@ from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer,
                                  Table, TableStyle, HRFlowable)
 from reportlab.lib.enums import TA_CENTER
 import io
-
+import smtplib
+import threading
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 # ── CREATE FLASK APP ─────────────────────────────────────────────
 app = Flask(__name__)
 app.secret_key = 'security_system_secret_key_2024'
@@ -27,6 +30,14 @@ app.permanent_session_lifetime = timedelta(minutes=30)
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# ── EMAIL NOTIFICATION CONFIG ─────────────────────────────────
+EMAIL_ENABLED  = True          # Set False to disable emails
+EMAIL_SENDER   = 'nsailaridley3@gmail.com'       # ← Change this
+EMAIL_PASSWORD = 'p b j n o z v m r h t e l r d c'     # ← Change this
+EMAIL_RECEIVER = 'nsaila.ridley@ictuniversity.edu.cm'      # ← Change this
+SMTP_HOST      = 'smtp.gmail.com'
+SMTP_PORT      = 587
 
 # ── INITIALIZE DATABASE ──────────────────────────────────────────
 with app.app_context():
@@ -72,6 +83,239 @@ def get_alert_count():
     ).fetchone()[0]
     db.close()
     return count
+
+def send_email_notification(subject, body, alert_type='',
+                             severity='', ip_address=''):
+    """
+    Send an email notification to the admin.
+    Runs in a background thread so it never blocks the app.
+    """
+    if not EMAIL_ENABLED:
+        return
+
+    def _send():
+        try:
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = subject
+            msg['From']    = EMAIL_SENDER
+            msg['To']      = EMAIL_RECEIVER
+
+            # ── Severity color ───────────────────────────────
+            if severity == 'high':
+                sev_color = '#dc2626'
+                sev_bg    = '#fee2e2'
+                sev_label = '🔴 HIGH'
+            elif severity == 'medium':
+                sev_color = '#d97706'
+                sev_bg    = '#fef3c7'
+                sev_label = '🟡 MEDIUM'
+            else:
+                sev_color = '#2563eb'
+                sev_bg    = '#dbeafe'
+                sev_label = '🔵 LOW'
+
+            # ── HTML email body ───────────────────────────────
+            now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {{
+        font-family: -apple-system, 'Segoe UI',
+                     Arial, sans-serif;
+        background: #f1f5f9;
+        margin: 0; padding: 20px;
+    }}
+    .container {{
+        max-width: 580px; margin: 0 auto;
+        background: white;
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }}
+    .header {{
+        background: linear-gradient(135deg,
+            #0a1628, #1e3a8a);
+        padding: 28px 32px;
+        text-align: center;
+    }}
+    .header h1 {{
+        color: white; font-size: 22px;
+        margin: 0 0 4px; font-weight: 800;
+    }}
+    .header p {{
+        color: rgba(255,255,255,0.5);
+        font-size: 13px; margin: 0;
+    }}
+    .alert-banner {{
+        background: {sev_bg};
+        border-left: 4px solid {sev_color};
+        padding: 14px 20px;
+        margin: 0;
+    }}
+    .alert-banner h2 {{
+        color: {sev_color};
+        font-size: 16px; margin: 0 0 4px;
+        font-weight: 700;
+    }}
+    .alert-banner p {{
+        color: #374151; font-size: 13px; margin: 0;
+    }}
+    .body {{ padding: 24px 32px; }}
+    .detail-row {{
+        display: flex; justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #f3f4f6;
+        font-size: 13px;
+    }}
+    .detail-label {{
+        color: #6b7280; font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 11px;
+    }}
+    .detail-value {{
+        color: #111827; font-weight: 600;
+    }}
+    .cta {{
+        background: #f8fafc;
+        padding: 20px 32px;
+        text-align: center;
+        border-top: 1px solid #e5e7eb;
+    }}
+    .cta a {{
+        display: inline-block;
+        background: #2563eb;
+        color: white !important;
+        padding: 12px 28px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 14px;
+    }}
+    .footer {{
+        padding: 16px 32px;
+        text-align: center;
+        font-size: 11px;
+        color: #9ca3af;
+        border-top: 1px solid #f3f4f6;
+    }}
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="header">
+      <h1>🛡️ SecureWatch</h1>
+      <p>Security Monitoring System — Alert Notification</p>
+    </div>
+
+    <div class="alert-banner">
+      <h2>⚠️ {alert_type.replace('_',' ').title()}
+             Detected</h2>
+      <p>Severity: <strong>{sev_label}</strong></p>
+    </div>
+
+    <div class="body">
+      <p style="font-size:14px; color:#374151;
+                margin:0 0 20px; line-height:1.6;">
+        A security event has been detected on your monitored
+        system. Please review immediately.
+      </p>
+
+      <div class="detail-row">
+        <span class="detail-label">Alert Type</span>
+        <span class="detail-value">
+            {alert_type.replace('_',' ').title()}
+        </span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">IP Address</span>
+        <span class="detail-value"
+              style="font-family:monospace;">
+            {ip_address or 'Unknown'}
+        </span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Severity</span>
+        <span class="detail-value"
+              style="color:{sev_color};">
+            {sev_label}
+        </span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Details</span>
+        <span class="detail-value"
+              style="max-width:280px; text-align:right;
+                     font-weight:400; color:#374151;">
+            {body}
+        </span>
+      </div>
+      <div class="detail-row"
+           style="border-bottom:none;">
+        <span class="detail-label">Timestamp</span>
+        <span class="detail-value"
+              style="font-family:monospace;">
+            {now}
+        </span>
+      </div>
+    </div>
+
+    <div class="cta">
+      <p style="font-size:13px; color:#6b7280;
+                margin:0 0 14px;">
+        Log in to SecureWatch to review and take action.
+      </p>
+      <a href="http://127.0.0.1:5000/alerts">
+        View Alert in SecureWatch →
+      </a>
+    </div>
+
+    <div class="footer">
+      SecureWatch Security Monitoring System |
+      This is an automated alert. Do not reply to this email.
+    </div>
+
+  </div>
+</body>
+</html>
+"""
+            # Plain-text fallback
+            plain = (
+                f"SecureWatch Alert\n"
+                f"{'='*40}\n"
+                f"Alert Type : {alert_type}\n"
+                f"Severity   : {severity.upper()}\n"
+                f"IP Address : {ip_address}\n"
+                f"Details    : {body}\n"
+                f"Timestamp  : {now}\n"
+                f"{'='*40}\n"
+                f"Log in to SecureWatch to review.\n"
+            )
+
+            msg.attach(MIMEText(plain, 'plain'))
+            msg.attach(MIMEText(html,  'html'))
+
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+                server.ehlo()
+                server.starttls()
+                server.login(EMAIL_SENDER, EMAIL_PASSWORD)
+                server.sendmail(
+                    EMAIL_SENDER,
+                    EMAIL_RECEIVER,
+                    msg.as_string()
+                )
+            print(f'📧 Alert email sent: {subject}')
+
+        except Exception as e:
+            print(f'❌ Email error: {e}')
+
+    # Run in background so it doesn't slow down the app
+    thread = threading.Thread(target=_send, daemon=True)
+    thread.start()
 
 # ═══════════════════════════════════════════════════════════════
 #  AUTHENTICATION ROUTES
@@ -1319,7 +1563,56 @@ def api_transaction_status():
         'document_uploaded':   bool(tx['document_path']),
         'updated_at':          tx['updated_at'],
     })
+@app.route('/email-settings', methods=['GET'])
+@login_required
+def email_settings():
+    db = get_db()
+    alert_count = db.execute(
+        'SELECT COUNT(*) FROM alerts '
+        'WHERE status = "open"').fetchone()[0]
+    db.close()
+    return render_template('email_settings.html',
+                           alert_count=alert_count,
+                           email_sender=EMAIL_SENDER,
+                           email_receiver=EMAIL_RECEIVER,
+                           email_enabled=EMAIL_ENABLED)
 
+
+@app.route('/email-settings', methods=['POST'])
+@login_required
+def email_settings_post():
+    global EMAIL_SENDER, EMAIL_PASSWORD, \
+           EMAIL_RECEIVER, EMAIL_ENABLED
+
+    EMAIL_SENDER   = request.form.get(
+        'sender', EMAIL_SENDER).strip()
+    EMAIL_PASSWORD = request.form.get(
+        'password', EMAIL_PASSWORD).strip()
+    EMAIL_RECEIVER = request.form.get(
+        'receiver', EMAIL_RECEIVER).strip()
+    EMAIL_ENABLED  = request.form.get(
+        'enabled') == 'on'
+
+    flash('✅ Email settings updated successfully!',
+          'success')
+    return redirect(url_for('email_settings'))
+
+
+@app.route('/test-email')
+@login_required
+def test_email():
+    """Send a test email to verify settings work."""
+    send_email_notification(
+        subject    = '✅ SecureWatch Test Email',
+        body       = 'Your email notifications are '
+                     'working correctly!',
+        alert_type = 'Test Alert',
+        severity   = 'low',
+        ip_address = request.remote_addr
+    )
+    flash('📧 Test email sent! Check your inbox.',
+          'success')
+    return redirect(url_for('email_settings'))
 
 @app.route('/api/banking/upload-document', methods=['POST'])
 def api_upload_document():

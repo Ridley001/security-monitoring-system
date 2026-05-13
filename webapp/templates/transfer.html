@@ -102,15 +102,6 @@
                 </div>
                 <div style="padding:24px;">
 
-                    <!-- Warning alert -->
-                    <div class="app-alert warning">
-                        <i class="bi bi-exclamation-triangle-fill"></i>
-                        <span>
-                            Transfers of <strong>$5,000 or more</strong>
-                            are automatically flagged as suspicious
-                            activity and reported to SecureWatch.
-                        </span>
-                    </div>
 
                     <form method="POST"
                           action="{{ url_for('transfer_post') }}">
@@ -136,7 +127,7 @@
 
                         <div class="form-group">
                             <label class="form-label">
-                                Amount (USD)
+                                Amount (FCFA)
                             </label>
                             <input type="number"
                                    name="amount"
@@ -148,7 +139,7 @@
                             <div class="form-hint">
                                 Available balance:
                                 <strong style="color:var(--success);">
-                                    ${{ "%.2f"|format(account.balance) }}
+                                    FCFA{{ "%.2f"|format(account.balance) }}
                                 </strong>
                             </div>
                         </div>
@@ -187,7 +178,7 @@
                             Your Balance
                         </div>
                         <div class="balance-amount-large">
-                            <span class="currency">$</span>
+                            <span class="currency">FCFA</span>
                             {{ "%.2f"|format(account.balance) }}
                         </div>
                         <div class="balance-account-num"
@@ -265,27 +256,10 @@
                                    style="color:var(--warning);
                                           font-size:13px;"></i>
                             </div>
-                            Large transfers ($5,000+) trigger alerts
+                            Large transfers (FCFA 1.000.000+) trigger alerts
                         </div>
 
-                        <div style="display:flex;
-                                    align-items:center;
-                                    gap:10px;
-                                    font-size:13px;
-                                    color:var(--text-secondary);">
-                            <div style="width:28px; height:28px;
-                                        background:var(--danger-light);
-                                        border-radius:8px;
-                                        display:flex;
-                                        align-items:center;
-                                        justify-content:center;
-                                        flex-shrink:0;">
-                                <i class="bi bi-geo-alt-fill"
-                                   style="color:var(--danger);
-                                          font-size:13px;"></i>
-                            </div>
-                            Your IP address is being monitored
-                        </div>
+                 
 
                     </div>
                 </div>

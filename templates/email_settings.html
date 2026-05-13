@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+{% block title %}Email Settings{% endblock %}
+
+{% block page_title %}
+    <i class="bi bi-envelope-fill me-2"></i>
+    Email Notifications
+{% endblock %}
+
+{% block content %}
+
+<div class="page-heading">
+    <h4>Email Alert Settings</h4>
+    <p>Configure email notifications for security alerts</p>
+</div>
+
+<div class="row g-4">
+
+    <!-- Settings form -->
+    <div class="col-md-7">
+        <div style="background:#161b22;
+                    border:1px solid #30363d;
+                    border-radius:14px;
+                    overflow:hidden;">
+
+            <div style="background:#1c2128;
+                        border-bottom:1px solid #30363d;
+                        padding:16px 22px;
+                        display:flex;
+                        align-items:center;
+                        gap:10px;">
+                <i class="bi bi-gear-fill"
+                   style="color:#7b6ff0;"></i>
+                <span style="font-size:14px;
+                             font-weight:700;
+                             color:#e6edf3;">
+                    SMTP Configuration
+                </span>
+            </div>
+
+            <div style="padding:24px;">
+                <form method="POST"
+                      action="{{ url_for('email_settings_post') }}">
+
+                    <!-- Enable toggle -->
+                    <div style="display:flex;
+                                align-items:center;
+                                justify-content:space-between;
+                                background:#0d1117;
+                                border:1px solid #30363d;
+                                border-radius:10px;
+                                padding:16px 18px;
+                                margin-bottom:20px;">
+                        <div>
+                            <div style="font-size:14px;
+                                        font-weight:600;
+                                        color:#e6edf3;
+                                        margin-bottom:2px;">
+                                Email Notifications
+                            </div>
+                            <div style="font-size:12px;
+                                        color:#8b949e;">
+                                Send emails when alerts
+                                are triggered
+                            </div>
+                        </div>
+                        <label style="display:flex;
+                                      align-items:center;
+                                      gap:8px;
+                                      cursor:pointer;">
+                            <input type="checkbox"
+                                   name="enabled"
+                                   {% if email_enabled %}
+                                   checked{% endif %}
+                                   style="width:18px;
+                                          height:18px;
+                                          accent-color:#7b6ff0;
+                                          cursor:pointer;">
+                            <span style="font-size:13px;
+                                         color:#8b949e;">
+                                Enabled
+                            </span>
+                        </label>
+                    </div>
+
+                    <!-- Sender email -->
+                    <div style="margin-bottom:16px;">
+                        <label style="display:block;
+                                      font-size:11px;
+                                      font-weight:700;
+                                      color:#8b949e;
+                                      text-transform:uppercase;
+                                      letter-spacing:1px;
+                                      margin-bottom:7px;">
+                            Sender Gmail Address
+                        </label>
+                        <input type="email"
+                               name="sender"
+                               value="{{ email_sender }}"
+                               placeholder="yourgmail@gmail.com"
+                               style="width:100%;
+                                      background:#1c2128;
+                                      border:1px solid #30363d;
+                                      border-radius:8px;
+                                      color:#e6edf3;
+                                      padding:10px 14px;
+                                      font-size:14px;
+                                      outline:none;"
+                               required>
+                    </div>
+
+                    <!-- App password -->
+                    <div style="margin-bottom:16px;">
+                        <label style="display:block;
+                                      font-size:11px;
+                                      font-weight:700;
+                                      color:#8b949e;
+                                      text-transform:uppercase;
+                                      letter-spacing:1px;
+                                      margin-bottom:7px;">
+                            Gmail App Password
+                        </label>
+                        <input type="password"
+                               name="password"
+                               placeholder="xxxx xxxx xxxx xxxx"
+                               style="width:100%;
+                                      background:#1c2128;
+                                      border:1px solid #30363d;
+                                      border-radius:8px;
+                                      color:#e6edf3;
+                                      padding:10px 14px;
+                                      font-size:14px;
+                                      outline:none;"
+                               required>
+                        <div style="font-size:11px;
+                                    color:#484f58;
+                                    margin-top:5px;">
+                            Generate at:
+                            myaccount.google.com →
+                            Security → App Passwords
+                        </div>
+                    </div>
+
+                    <!-- Receiver email -->
+                    <div style="margin-bottom:24px;">
+                        <label style="display:block;
+                                      font-size:11px;
+                                      font-weight:700;
+                                      color:#8b949e;
+                                      text-transform:uppercase;
+                                      letter-spacing:1px;
+                                      margin-bottom:7px;">
+                            Alert Recipient Email
+                        </label>
+                        <input type="email"
+                               name="receiver"
+                               value="{{ email_receiver }}"
+                               placeholder="admin@youremail.com"
+                               style="width:100%;
+                                      background:#1c2128;
+                                      border:1px solid #30363d;
+                                      border-radius:8px;
+                                      color:#e6edf3;
+                                      padding:10px 14px;
+                                      font-size:14px;
+                                      outline:none;"
+                               required>
+                    </div>
+
+                    <div style="display:flex; gap:10px;">
+                        <button type="submit"
+                                class="btn btn-purple">
+                            <i class="bi bi-save me-1"></i>
+                            Save Settings
+                        </button>
+                        <a href="{{ url_for('test_email') }}"
+                           class="btn"
+                           style="background:rgba(63,185,80,0.1);
+                                  color:#3fb950;
+                                  border:1px solid rgba(63,185,80,0.25);
+                                  border-radius:8px;
+                                  padding:8px 18px;
+                                  text-decoration:none;
+                                  font-size:13px;
+                                  font-weight:600;">
+                            <i class="bi bi-send me-1"></i>
+                            Send Test Email
+                        </a>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info panel -->
+    <div class="col-md-5">
+
+        <!-- When emails are sent -->
+        <div style="background:#161b22;
+                    border:1px solid #30363d;
+                    border-radius:14px;
+                    overflow:hidden;
+                    margin-bottom:16px;">
+
+            <div style="background:#1c2128;
+                        border-bottom:1px solid #30363d;
+                        padding:14px 20px;">
+                <span style="font-size:13px;
+                             font-weight:700;
+                             color:#e6edf3;">
+                    <i class="bi bi-bell-fill me-2"
+                       style="color:#d29922;"></i>
+                    When You'll Be Notified
+                </span>
+            </div>
+
+            <div style="padding:16px 20px;">
+                {% for icon, title, desc, color in [
+                    ('bi-shield-fill-x', 'Brute Force Attack',
+                     '5+ failed logins in 60 seconds',
+                     '#f85149'),
+                    ('bi-slash-circle-fill', 'Blocked IP Activity',
+                     'Blocked IP attempts access',
+                     '#f85149'),
+                    ('bi-exclamation-triangle-fill',
+                     'Suspicious Activity',
+                     'Unusual behaviour detected',
+                     '#d29922'),
+                    ('bi-bank2', 'Large Transfer Alert',
+                     'Transfer ≥ FCFA 5,000 flagged',
+                     '#d29922'),
+                ] %}
+                <div style="display:flex;
+                            align-items:flex-start;
+                            gap:12px;
+                            padding:10px 0;
+                            border-bottom:1px solid #21262d;">
+                    <i class="bi {{ icon }}"
+                       style="color:{{ color }};
+                              font-size:16px;
+                              flex-shrink:0;
+                              margin-top:1px;"></i>
+                    <div>
+                        <div style="font-size:13px;
+                                    font-weight:600;
+                                    color:#e6edf3;
+                                    margin-bottom:2px;">
+                            {{ title }}
+                        </div>
+                        <div style="font-size:11px;
+                                    color:#8b949e;">
+                            {{ desc }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Setup guide -->
+        <div style="background:#161b22;
+                    border:1px solid #30363d;
+                    border-radius:14px;
+                    padding:18px 20px;">
+            <div style="font-size:13px;
+                        font-weight:700;
+                        color:#e6edf3;
+                        margin-bottom:14px;">
+                <i class="bi bi-info-circle-fill me-2"
+                   style="color:#58a6ff;"></i>
+                Gmail Setup Guide
+            </div>
+            {% for step, text in [
+                ('1', 'Go to myaccount.google.com'),
+                ('2', 'Security → 2-Step Verification → Enable'),
+                ('3', 'Security → App Passwords'),
+                ('4', 'Select "Mail" + "Other (SecureWatch)"'),
+                ('5', 'Copy the 16-character password'),
+                ('6', 'Paste it in the field above'),
+            ] %}
+            <div style="display:flex;
+                        gap:10px; margin-bottom:8px;
+                        font-size:12px; color:#8b949e;">
+                <span style="width:20px; height:20px;
+                             background:#7b6ff0;
+                             border-radius:50%;
+                             display:flex;
+                             align-items:center;
+                             justify-content:center;
+                             color:white;
+                             font-size:10px;
+                             font-weight:700;
+                             flex-shrink:0;">
+                    {{ step }}
+                </span>
+                {{ text }}
+            </div>
+            {% endfor %}
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
