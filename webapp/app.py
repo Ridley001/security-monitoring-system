@@ -8,13 +8,13 @@ app = Flask(__name__)
 app.secret_key = 'techcorp_bank_secret_2024'
 
 # ── SECUREWATCH URLS ─────────────────────────────────────────────
-MAIN_SYSTEM_URL    = 'http://127.0.0.1:5000/api/logs'
-MAIN_BLOCKED_URL   = 'http://127.0.0.1:5000/api/is-blocked'
-MAIN_TICKET_URL    = 'http://127.0.0.1:5000/api/banking/ticket'
-MAIN_TICKET_STATUS = 'http://127.0.0.1:5000/api/banking/ticket-status'
-MAIN_TX_URL        = 'http://127.0.0.1:5000/api/banking/transaction'
-MAIN_TX_STATUS     = 'http://127.0.0.1:5000/api/banking/transaction-status'
-MAIN_TX_DOC_UPLOAD = 'http://127.0.0.1:5000/api/banking/upload-document'
+MAIN_SYSTEM_URL    = 'https://secure-watch.up.railway.app//api/logs'
+MAIN_BLOCKED_URL   = 'https://secure-watch.up.railway.app//api/is-blocked'
+MAIN_TICKET_URL    = 'https://secure-watch.up.railway.app//api/banking/ticket'
+MAIN_TICKET_STATUS = 'https://secure-watch.up.railway.app//api/banking/ticket-status'
+MAIN_TX_URL        = 'https://secure-watch.up.railway.app//api/banking/transaction'
+MAIN_TX_STATUS     = 'https://secure-watch.up.railway.app//api/banking/transaction-status'
+MAIN_TX_DOC_UPLOAD = 'https://secure-watch.up.railway.app//api/banking/upload-document'
 API_KEY            = 'securewatch-api-key-2024'
 
 # ═══════════════════════════════════════════════════════════════
