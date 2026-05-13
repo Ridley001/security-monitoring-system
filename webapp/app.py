@@ -18,7 +18,7 @@ MAIN_TX_DOC_UPLOAD = 'http://127.0.0.1:5000/api/banking/upload-document'
 API_KEY            = 'securewatch-api-key-2024'
 
 # ═══════════════════════════════════════════════════════════════
-#  ACCOUNTS  ← Fixed: no duplicate keys
+#  ACCOUNTS
 # ═══════════════════════════════════════════════════════════════
 
 ACCOUNTS = {
@@ -45,7 +45,6 @@ ACCOUNTS = {
         'card_limit':     300000.00,
     },
     'Ridley': {
-        # ← Renamed from duplicate 'Nsaila' to 'Ridley'
         'password':       'bank789',
         'name':           'Nsaila Ridley N',
         'account_number': '00650196647',
@@ -187,10 +186,7 @@ def submit_tx_for_review(data):
 
 
 def fetch_tx_status(ref):
-    """
-    Returns a clean dict with guaranteed string 'status' field.
-    This prevents the '0' bug caused by integer values.
-    """
+    """Returns clean dict with guaranteed string status."""
     try:
         r = requests.get(
             MAIN_TX_STATUS,
@@ -200,19 +196,16 @@ def fetch_tx_status(ref):
         )
         if r.status_code == 200:
             data = r.json()
-            # ── Guarantee status is always a string ──────────────
-            raw_status = data.get('status', '')
-            if not isinstance(raw_status, str):
-                raw_status = str(raw_status)
-            data['status'] = raw_status
 
-            # ── Guarantee document_uploaded is always bool ────────
-            doc_up = data.get('document_uploaded', False)
-            data['document_uploaded'] = bool(doc_up)
+            raw = data.get('status', '')
+            if not isinstance(raw, str):
+                raw = str(raw)
+            data['status'] = raw
 
-            # ── Guarantee document_requested is always bool ───────
-            doc_req = data.get('document_requested', False)
-            data['document_requested'] = bool(doc_req)
+            data['document_uploaded'] = bool(
+                data.get('document_uploaded', False))
+            data['document_requested'] = bool(
+                data.get('document_requested', False))
 
             return data
     except Exception as e:
@@ -221,10 +214,7 @@ def fetch_tx_status(ref):
 
 
 def process_approved_transfer(tx_ref):
-    """
-    Execute money movement for an approved transfer.
-    Returns True if processed now, False if already done.
-    """
+    """Execute money movement for an approved transfer."""
     pending = PENDING.get(tx_ref)
     if not pending:
         return False
@@ -242,15 +232,12 @@ def process_approved_transfer(tx_ref):
     recipient_name = ACCOUNTS.get(recipient_key, {}).get(
         'name', recipient_key)
 
-    # Deduct from sender
     if sender_key in ACCOUNTS:
         ACCOUNTS[sender_key]['balance'] -= amount
 
-    # Credit recipient
     if recipient_key in ACCOUNTS:
         ACCOUNTS[recipient_key]['balance'] += amount
 
-    # Add credit to recipient's history (no duplicates)
     credit_id = tx_ref + '_CREDIT'
     if recipient_key not in TRANSACTIONS:
         TRANSACTIONS[recipient_key] = []
@@ -263,27 +250,28 @@ def process_approved_transfer(tx_ref):
         TRANSACTIONS[recipient_key].append({
             'id':          credit_id,
             'type':        'credit',
-            'description': f'Transfer from {sender_name}'
-                           + (f' — {note}' if note else '')
-                           + ' (Security Approved)',
+            'description': (
+                f'Transfer from {sender_name}'
+                + (f' — {note}' if note else '')
+                + ' (Security Approved)'
+            ),
             'amount':      amount,
             'date':        date,
             'status':      'completed',
             'tx_ref':      credit_id,
         })
 
-    # Update sender tx to completed
     for tx in TRANSACTIONS.get(sender_key, []):
         if tx.get('tx_ref') == tx_ref:
             tx['status'] = 'completed'
             break
 
-    # Mark as processed
-    PENDING[tx_ref]['processed']  = True
-    PENDING[tx_ref]['sw_status']  = 'approved'
+    PENDING[tx_ref]['processed'] = True
+    PENDING[tx_ref]['sw_status'] = 'approved'
 
     print(f'✅ Transfer processed: '
-          f'${amount:,.2f} {sender_name} → {recipient_name}')
+          f'FCFA {amount:,.2f} '
+          f'{sender_name} → {recipient_name}')
     return True
 
 
@@ -301,6 +289,7 @@ def login_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated
+
 
 # ═══════════════════════════════════════════════════════════════
 #  AUTH
@@ -357,6 +346,7 @@ def logout():
     flash('You have been logged out securely.', 'success')
     return redirect(url_for('login'))
 
+
 # ═══════════════════════════════════════════════════════════════
 #  DASHBOARD
 # ═══════════════════════════════════════════════════════════════
@@ -380,6 +370,7 @@ def dashboard():
                            recent_txns=recent_txns,
                            total_in=total_in,
                            total_out=total_out)
+
 
 # ═══════════════════════════════════════════════════════════════
 #  TRANSFER
@@ -424,7 +415,7 @@ def transfer_post():
         flash('Insufficient funds.', 'danger')
         send_log(ip, 'suspicious_activity',
                  f'"{account["name"]}" attempted '
-                 f'${amount:,.2f} with insufficient funds')
+                 f'FCFA {amount:,.2f} with insufficient funds')
         return redirect(url_for('transfer'))
 
     recipient = ACCOUNTS.get(recipient_key)
@@ -435,7 +426,7 @@ def transfer_post():
     tx_id = generate_tx_id()
     now   = datetime.now().strftime('%Y-%m-%d')
 
-    # ── LARGE TRANSFER → needs admin review ───────────────────────
+    # ── LARGE TRANSFER → needs admin review ───────────────────
     if amount >= 5000:
         tx_data = {
             'tx_ref':          tx_id,
@@ -461,7 +452,6 @@ def transfer_post():
                 'sw_status':       'pending_review',
             }
 
-            # Add as pending — NO balance deduction yet
             if username not in TRANSACTIONS:
                 TRANSACTIONS[username] = []
 
@@ -481,12 +471,12 @@ def transfer_post():
             send_log(ip, 'suspicious_activity',
                      f'LARGE TRANSFER FLAGGED: '
                      f'"{account["name"]}" → '
-                     f'${amount:,.2f} → '
+                     f'FCFA {amount:,.2f} → '
                      f'"{recipient["name"]}" '
                      f'(Ref: {tx_id})')
 
             flash(
-                f'⚠️ Transfer of ${amount:,.2f} to '
+                f'⚠️ Transfer of FCFA {amount:,.2f} to '
                 f'{recipient["name"]} requires security '
                 f'review. Reference: {tx_id}. '
                 f'Check your Transactions page for updates.',
@@ -498,15 +488,10 @@ def transfer_post():
 
         return redirect(url_for('transactions'))
 
-    # ── NORMAL TRANSFER → process immediately ─────────────────────
-
-    # Deduct sender
-    ACCOUNTS[username]['balance'] -= amount
-
-    # Credit recipient
+    # ── NORMAL TRANSFER → process immediately ─────────────────
+    ACCOUNTS[username]['balance']      -= amount
     ACCOUNTS[recipient_key]['balance'] += amount
 
-    # Add debit record to sender
     if username not in TRANSACTIONS:
         TRANSACTIONS[username] = []
 
@@ -523,7 +508,6 @@ def transfer_post():
         'tx_ref':      None,
     })
 
-    # Add credit record to recipient
     if recipient_key not in TRANSACTIONS:
         TRANSACTIONS[recipient_key] = []
 
@@ -542,16 +526,17 @@ def transfer_post():
 
     send_log(ip, 'fund_transfer',
              f'Transfer: "{account["name"]}" sent '
-             f'${amount:,.2f} to "{recipient["name"]}" '
+             f'FCFA {amount:,.2f} to "{recipient["name"]}" '
              f'(Ref: {tx_id})')
 
     flash(
-        f'✅ Transfer of ${amount:,.2f} to '
+        f'✅ Transfer of FCFA {amount:,.2f} to '
         f'{recipient["name"]} completed! '
         f'Reference: {tx_id}',
         'success'
     )
     return redirect(url_for('transactions'))
+
 
 # ═══════════════════════════════════════════════════════════════
 #  TRANSACTIONS
@@ -575,57 +560,57 @@ def transactions():
         tx_ref       = tx.get('tx_ref') or ''
         local_status = tx.get('status', '')
 
-        # Only poll if transaction is still in a pending state
         if tx_ref and local_status not in [
             'completed', 'rejected'
         ]:
             sw = fetch_tx_status(tx_ref)
 
-            if sw:
-                # sw['status'] is guaranteed to be a string
-                # by fetch_tx_status()
-                sw_status    = sw['status']
-                doc_uploaded = sw['document_uploaded']
-                doc_requested= sw['document_requested']
+            if sw is not None:
+                sw_status = sw.get('status', '')
+                if not isinstance(sw_status, str):
+                    sw_status = str(sw_status)
 
-                # Store for template
+                doc_uploaded  = bool(
+                    sw.get('document_uploaded', False))
+                doc_requested = bool(
+                    sw.get('document_requested', False))
+
                 pending_statuses[tx_ref] = sw
 
-                # Update local transaction status
-                if sw_status in [
-                    'pending_review', 'document_requested',
-                    'approved', 'rejected',
-                    'document_uploaded'
-                ]:
+                valid_statuses = [
+                    'pending_review',
+                    'document_requested',
+                    'document_uploaded',
+                    'approved',
+                    'rejected',
+                ]
+                if sw_status in valid_statuses:
                     tx['status'] = sw_status
 
                 if tx_ref in PENDING:
                     PENDING[tx_ref]['sw_status'] = sw_status
 
-                # ── Auto-process approved transfers ───────────────
                 if sw_status == 'approved':
                     p = PENDING.get(tx_ref, {})
                     if not p.get('processed'):
                         process_approved_transfer(tx_ref)
                     tx['status'] = 'completed'
 
-                # ── Document requested ────────────────────────────
                 elif sw_status == 'document_requested':
-                    tx['status'] = 'document_requested'
                     if not doc_uploaded:
+                        tx['status'] = 'document_requested'
                         doc_request_txns.append(tx)
                     else:
-                        # Already uploaded, waiting for approval
+                        tx['status'] = 'document_uploaded'
                         pending_review_txns.append(tx)
 
-                # ── Still waiting ─────────────────────────────────
                 elif sw_status in [
                     'pending_review', 'under_review'
                 ]:
+                    tx['status'] = 'under_review'
                     pending_review_txns.append(tx)
 
             else:
-                # Can't reach SecureWatch
                 pending_statuses[tx_ref] = {
                     'status':             local_status,
                     'document_uploaded':  False,
@@ -638,13 +623,15 @@ def transactions():
                 elif local_status == 'document_requested':
                     doc_request_txns.append(tx)
 
-    return render_template('transactions.html',
-                           account=account,
-                           username=username,
-                           transactions=txns[::-1],
-                           pending_statuses=pending_statuses,
-                           doc_request_txns=doc_request_txns,
-                           pending_review_txns=pending_review_txns)
+    return render_template(
+        'transactions.html',
+        account=account,
+        username=username,
+        transactions=txns[::-1],
+        pending_statuses=pending_statuses,
+        doc_request_txns=doc_request_txns,
+        pending_review_txns=pending_review_txns,
+    )
 
 
 @app.route('/refresh-pending')
@@ -670,7 +657,9 @@ def check_transaction_status(tx_ref):
 
     txns     = TRANSACTIONS.get(username, [])
     tx_local = next(
-        (t for t in txns if t.get('tx_ref') == tx_ref), None)
+        (t for t in txns if t.get('tx_ref') == tx_ref),
+        None
+    )
 
     if tx_local:
         tx_local['status'] = status
@@ -681,7 +670,7 @@ def check_transaction_status(tx_ref):
             process_approved_transfer(tx_ref)
             flash(
                 f'✅ Transfer of '
-                f'${p.get("amount", 0):,.2f} to '
+                f'FCFA {p.get("amount", 0):,.2f} to '
                 f'{p.get("recipient_name", "")} '
                 f'approved and processed!',
                 'success'
@@ -690,16 +679,19 @@ def check_transaction_status(tx_ref):
             flash('Transfer already processed.', 'info')
 
     elif status == 'rejected':
-        reason = sw.get('rejection_reason', 'No reason given')
-        flash(f'🚫 Transfer rejected. Reason: {reason}',
-              'danger')
+        reason = sw.get('rejection_reason',
+                        'No reason given')
+        flash(
+            f'🚫 Transfer rejected. Reason: {reason}',
+            'danger'
+        )
 
     elif status == 'document_requested':
         if tx_local:
             tx_local['status'] = 'document_requested'
         flash(
-            '📄 Please upload a document for this '
-            'transfer using the Upload column in the table.',
+            '📄 Please upload a document using the '
+            'Upload column in the transactions table.',
             'warning'
         )
 
@@ -719,14 +711,15 @@ def upload_transaction_document(tx_ref):
     file = request.files.get('document')
 
     if not file or file.filename == '':
-        flash('Please select a document to upload.',
-              'danger')
+        flash('Please select a document first.', 'danger')
         return redirect(url_for('transactions'))
 
     username = session['user']
     txns     = TRANSACTIONS.get(username, [])
     tx_local = next(
-        (t for t in txns if t.get('tx_ref') == tx_ref), None)
+        (t for t in txns if t.get('tx_ref') == tx_ref),
+        None
+    )
 
     try:
         r = requests.post(
@@ -737,10 +730,11 @@ def upload_transaction_document(tx_ref):
                     file.filename,
                     file.stream,
                     file.content_type
+                    or 'application/octet-stream'
                 )
             },
             headers={'X-API-Key': API_KEY},
-            timeout=10
+            timeout=15
         )
 
         if r.status_code == 200:
@@ -749,25 +743,27 @@ def upload_transaction_document(tx_ref):
             if tx_ref in PENDING:
                 PENDING[tx_ref]['sw_status'] = \
                     'document_uploaded'
-
             flash(
-                f'✅ Document uploaded successfully for '
-                f'transaction {tx_ref}. The SecureWatch '
-                f'admin will review and approve shortly.',
+                f'✅ Document uploaded for {tx_ref}. '
+                f'SecureWatch admin will review and '
+                f'approve your transfer shortly.',
                 'success'
             )
         else:
-            body = r.text
             flash(
-                f'Upload failed (status {r.status_code}). '
-                f'Please try again. Detail: {body}',
+                f'Upload failed (HTTP {r.status_code}). '
+                f'Please try again.',
                 'danger'
             )
 
+    except requests.exceptions.Timeout:
+        flash('Upload timed out. Please try again.',
+              'danger')
     except Exception as e:
         flash(f'Upload error: {str(e)}', 'danger')
 
     return redirect(url_for('transactions'))
+
 
 # ═══════════════════════════════════════════════════════════════
 #  CARDS
@@ -781,7 +777,8 @@ def cards():
     send_log(request.remote_addr, 'sensitive_access',
              f'User "{account["name"]}" viewed cards')
     return render_template('cards.html',
-                           account=account, username=username)
+                           account=account,
+                           username=username)
 
 
 @app.route('/freeze-card', methods=['POST'])
@@ -807,6 +804,7 @@ def unfreeze_card():
     flash('✅ Card unfrozen successfully.', 'success')
     return redirect(url_for('cards'))
 
+
 # ═══════════════════════════════════════════════════════════════
 #  SUPPORT
 # ═══════════════════════════════════════════════════════════════
@@ -826,10 +824,12 @@ def support():
         if ref:
             data = fetch_ticket_status(ref)
             if data:
-                ticket['status']      = data.get(
+                ticket['status'] = data.get(
                     'status', ticket.get('status', 'open'))
-                ticket['admin_reply'] = data.get('admin_reply')
-                ticket['updated_at']  = data.get('updated_at')
+                ticket['admin_reply'] = data.get(
+                    'admin_reply')
+                ticket['updated_at'] = data.get(
+                    'updated_at')
 
     return render_template('support.html',
                            account=account,
@@ -846,7 +846,8 @@ def support_post():
 
     subject  = request.form.get('subject',  '').strip()
     message  = request.form.get('message',  '').strip()
-    category = request.form.get('category', 'general').strip()
+    category = request.form.get('category',
+                                'general').strip()
 
     if not subject or not message:
         flash('Please fill in all fields.', 'danger')
@@ -895,4 +896,5 @@ def support_post():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app.run(debug=False, host='0.0.0.0',
+            port=int(os.environ.get('PORT', 5001)))

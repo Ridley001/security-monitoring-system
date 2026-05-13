@@ -241,167 +241,185 @@
                             {{ tx.date }}
                         </td>
 
-                        <!-- Status -->
-                        <td style="min-width:140px;">
+                        <!-- Status column -->
+<td style="min-width:150px; vertical-align:middle;">
 
-                            {% if sw_status == 'completed'
-                                  or tx.status == 'completed' %}
+    {% if tx.status == 'completed'
+          or sw_status == 'completed' %}
 
-                                <span class="badge badge-completed">
-                                    <i class="bi bi-check2 me-1"></i>
-                                    Completed
-                                </span>
+        <span class="badge badge-completed">
+            <i class="bi bi-check2 me-1"></i>
+            Completed
+        </span>
 
-                            {% elif sw_status == 'approved' %}
+    {% elif sw_status == 'approved' %}
 
-                                <span class="badge badge-completed">
-                                    <i class="bi bi-check2-circle me-1"></i>
-                                    Approved
-                                </span>
-                                {% if tx_ref %}
-                                <a href="{{ url_for('check_transaction_status',
-                                                    tx_ref=tx_ref) }}"
-                                   class="btn-primary"
-                                   style="display:inline-block;
-                                          margin-top:6px;
-                                          padding:4px 10px;
-                                          font-size:11px;">
-                                    Process Now
-                                </a>
-                                {% endif %}
+        <span class="badge badge-completed">
+            <i class="bi bi-check2-circle me-1"></i>
+            Approved
+        </span>
+        {% if tx_ref %}
+        <a href="{{ url_for('check_transaction_status',
+                             tx_ref=tx_ref) }}"
+           class="btn-primary"
+           style="display:block; margin-top:6px;
+                  padding:4px 10px; font-size:11px;
+                  text-align:center; text-decoration:none;">
+            Process Now
+        </a>
+        {% endif %}
 
-                            {% elif sw_status == 'rejected' %}
+    {% elif sw_status == 'rejected'
+            or tx.status == 'rejected' %}
 
-                                <span class="badge badge-debit">
-                                    <i class="bi bi-x-circle me-1"></i>
-                                    Rejected
-                                </span>
-                                {% if sw.get('rejection_reason') %}
-                                <div style="font-size:11px;
-                                            color:var(--danger);
-                                            margin-top:4px;
-                                            max-width:160px;
-                                            line-height:1.4;">
-                                    {{ sw.rejection_reason }}
-                                </div>
-                                {% endif %}
+        <span class="badge badge-debit">
+            <i class="bi bi-x-circle me-1"></i>
+            Rejected
+        </span>
+        {% set reason = sw.get('rejection_reason','')
+                        if sw else '' %}
+        {% if reason %}
+        <div style="font-size:11px; color:var(--danger);
+                    margin-top:4px; max-width:160px;
+                    line-height:1.4;">
+            {{ reason }}
+        </div>
+        {% endif %}
 
-                            {% elif sw_status == 'document_requested' %}
+    {% elif sw_status == 'document_requested'
+            or tx.status == 'document_requested' %}
 
-                                <span class="badge"
-                                      style="background:rgba(37,99,235,0.1);
-                                             color:var(--blue-light);
-                                             border:1px solid rgba(37,99,235,0.2);">
-                                    <i class="bi bi-file-earmark me-1"></i>
-                                    Doc Required
-                                </span>
+        <span class="badge"
+              style="background:rgba(37,99,235,0.1);
+                     color:var(--blue-light);
+                     border:1px solid
+                         rgba(37,99,235,0.2);
+                     padding:3px 10px;
+                     border-radius:20px;
+                     font-size:11px;
+                     font-weight:600;">
+            <i class="bi bi-file-earmark me-1"></i>
+            Doc Required
+        </span>
 
-                            {% elif sw_status == 'document_uploaded'
-                                    or tx.status == 'document_uploaded' %}
+    {% elif sw_status == 'document_uploaded'
+            or tx.status == 'document_uploaded' %}
 
-                                <span class="badge badge-pending"
-                                      style="background:rgba(5,150,105,0.08);
-                                             color:var(--success);
-                                             border:1px solid rgba(5,150,105,0.2);">
-                                    <i class="bi bi-file-check me-1"></i>
-                                    Doc Uploaded
-                                </span>
+        <span class="badge"
+              style="background:rgba(5,150,105,0.08);
+                     color:var(--success);
+                     border:1px solid
+                         rgba(5,150,105,0.2);
+                     padding:3px 10px;
+                     border-radius:20px;
+                     font-size:11px;
+                     font-weight:600;">
+            <i class="bi bi-file-check me-1"></i>
+            Doc Uploaded
+        </span>
 
-                            {% elif sw_status == 'pending_review'
-                                    or tx.status == 'under_review' %}
+    {% elif tx.status == 'under_review'
+            or sw_status == 'pending_review'
+            or sw_status == 'under_review' %}
 
-                                <span class="badge badge-pending">
-                                    <i class="bi bi-hourglass-split me-1"></i>
-                                    Under Review
-                                </span>
-                                {% if tx_ref %}
-                                <a href="{{ url_for('check_transaction_status',
-                                                    tx_ref=tx_ref) }}"
-                                   style="display:block;
-                                          margin-top:5px;
-                                          font-size:11px;
-                                          color:var(--blue-light);
-                                          text-decoration:none;
-                                          font-weight:600;">
-                                    <i class="bi bi-arrow-clockwise me-1"></i>
-                                    Check Status
-                                </a>
-                                {% endif %}
+        <span class="badge badge-pending">
+            <i class="bi bi-hourglass-split me-1"></i>
+            Under Review
+        </span>
+        {% if tx_ref %}
+        <a href="{{ url_for('check_transaction_status',
+                             tx_ref=tx_ref) }}"
+           style="display:block; margin-top:5px;
+                  font-size:11px;
+                  color:var(--blue-light);
+                  text-decoration:none;
+                  font-weight:600;">
+            <i class="bi bi-arrow-clockwise me-1"></i>
+            Check Status
+        </a>
+        {% endif %}
 
-                            {% else %}
+    {% else %}
 
-                                <span class="badge badge-pending">
-                                    {{ (sw_status or tx.status)|capitalize }}
-                                </span>
+        <span class="badge badge-pending">
+            {{ (sw_status or tx.status)|
+               replace('_',' ')|capitalize }}
+        </span>
 
-                            {% endif %}
+    {% endif %}
 
-                        </td>
+</td>
+
 <!-- Document Upload column -->
-<td style="min-width:220px;">
+<td style="min-width:220px; vertical-align:middle;">
 
-    {% if tx_ref
-          and sw_status == 'document_requested'
-          and not doc_up %}
+    {% set need_upload =
+        tx_ref and (
+            sw_status == 'document_requested'
+            or tx.status == 'document_requested'
+        ) and not (
+            sw.get('document_uploaded', False)
+            if sw else False
+        )
+    %}
 
-        <!-- Upload form with file picker + send button -->
+    {% set already_uploaded =
+        tx_ref and (
+            (sw.get('document_uploaded', False)
+             if sw else False)
+            or tx.status == 'document_uploaded'
+            or sw_status == 'document_uploaded'
+        )
+    %}
+
+    {% if need_upload %}
+
         <form method="POST"
               action="{{ url_for(
                   'upload_transaction_document',
                   tx_ref=tx_ref) }}"
               enctype="multipart/form-data"
-              id="upload-form-{{ tx_ref }}">
+              id="form-{{ loop.index }}">
 
             <div style="display:flex;
                         flex-direction:column;
                         gap:8px;">
 
-                <!-- File input styled as button -->
-                <label for="file-{{ tx_ref }}"
-                       style="display:inline-flex;
+                <label for="file-{{ loop.index }}"
+                       id="picker-{{ loop.index }}"
+                       style="display:flex;
                               align-items:center;
                               gap:8px;
                               padding:9px 14px;
-                              background:var(--info-bg);
+                              background:rgba(37,99,235,0.08);
                               color:var(--blue-light);
-                              border:1.5px solid rgba(37,99,235,0.25);
+                              border:1.5px solid
+                                  rgba(37,99,235,0.25);
                               border-radius:8px;
                               font-size:12px;
                               font-weight:600;
                               cursor:pointer;
-                              transition:all 0.2s;
-                              width:100%;"
-                       onmouseover="this.style.background='rgba(37,99,235,0.12)'"
-                       onmouseout="this.style.background='var(--info-bg)'">
+                              width:100%;">
                     <i class="bi bi-folder2-open"
-                       style="font-size:15px;"></i>
-                    <span id="label-{{ tx_ref }}">
-                        Choose Document
+                       style="font-size:15px;
+                              flex-shrink:0;"></i>
+                    <span id="fname-{{ loop.index }}">
+                        Upload Document
                     </span>
                 </label>
 
                 <input type="file"
-                       id="file-{{ tx_ref }}"
+                       id="file-{{ loop.index }}"
                        name="document"
                        accept=".pdf,.jpg,.jpeg,
                                .png,.doc,.docx"
                        required
                        style="display:none;"
-                       onchange="
-                           var name = this.files[0]
-                               ? this.files[0].name
-                               : 'Choose Document';
-                           document.getElementById(
-                               'label-{{ tx_ref }}')
-                               .textContent = name;
-                           document.getElementById(
-                               'send-{{ tx_ref }}')
-                               .style.display = 'flex';
-                       ">
+                       onchange="onFileChosen(
+                           this, '{{ loop.index }}')">
 
-                <!-- Send button — hidden until file chosen -->
                 <button type="submit"
-                        id="send-{{ tx_ref }}"
+                        id="sendbtn-{{ loop.index }}"
                         style="display:none;
                                align-items:center;
                                justify-content:center;
@@ -415,18 +433,9 @@
                                border:none;
                                border-radius:8px;
                                font-size:12px;
-                               font-weight:600;
+                               font-weight:700;
                                cursor:pointer;
-                               width:100%;
-                               transition:all 0.2s;"
-                        onmouseover="
-                            this.style.opacity='0.9';
-                            this.style.transform=
-                                'translateY(-1px)';"
-                        onmouseout="
-                            this.style.opacity='1';
-                            this.style.transform=
-                                'translateY(0)';">
+                               width:100%;">
                     <i class="bi bi-send-fill"
                        style="font-size:13px;"></i>
                     Send to Admin
@@ -435,59 +444,55 @@
             </div>
         </form>
 
-    {% elif tx_ref and doc_up %}
+    {% elif already_uploaded %}
 
-        <!-- Document already uploaded -->
         <div style="display:flex;
                     align-items:flex-start;
                     gap:8px;
                     font-size:12px;">
             <i class="bi bi-file-check-fill"
-               style="font-size:18px;
+               style="font-size:20px;
                       color:var(--success);
-                      flex-shrink:0;
-                      margin-top:1px;"></i>
+                      flex-shrink:0;"></i>
             <div>
-                <div style="font-weight:600;
+                <div style="font-weight:700;
                             color:var(--success);
                             margin-bottom:2px;">
-                    Document sent ✓
+                    Document Sent ✓
                 </div>
-                <div style="color:var(--text-secondary);
-                            font-size:11px;">
-                    Awaiting admin review
-                    &amp; approval.
+                <div style="color:var(--text-secondary);">
+                    Awaiting admin approval.
                 </div>
             </div>
         </div>
 
-    {% elif tx_ref and sw_status == 'approved' %}
+    {% elif sw_status == 'approved'
+            or tx.status == 'completed' %}
 
         <div style="font-size:12px;
                     color:var(--success);
                     font-weight:600;">
             <i class="bi bi-check-circle-fill me-1"></i>
-            Approved ✅
+            Transfer approved ✅
         </div>
 
-    {% elif tx_ref and sw_status == 'rejected' %}
+    {% elif sw_status == 'rejected' %}
 
         <div style="font-size:12px;
                     color:var(--danger);
                     font-weight:600;">
             <i class="bi bi-x-circle-fill me-1"></i>
-            Rejected
+            Transfer rejected
         </div>
 
     {% else %}
 
-        <span style="color:var(--gray-400,#9ca3af);
-                     font-size:13px;">—</span>
+        <span style="color:#9ca3af;
+                     font-size:14px;">—</span>
 
     {% endif %}
 
 </td>
-
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -508,6 +513,19 @@
     </div>
 </div>
 </div>
-
+<script>
+    function onFileChosen(input, idx) {
+        var name = (input.files && input.files.length > 0)
+            ? input.files[0].name : 'Upload Document';
+        if (name.length > 22) {
+            name = name.substring(0, 19) + '...';
+        }
+        var label = document.getElementById('fname-' + idx);
+        if (label) label.textContent = name;
+    
+        var btn = document.getElementById('sendbtn-' + idx);
+        if (btn) btn.style.display = 'flex';
+    }
+    </script>
 </body>
 </html>
