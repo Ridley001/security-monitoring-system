@@ -1,220 +1,244 @@
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
 
-{% block page_title %}
-    <i class="bi bi-speedometer2 me-2"></i>Dashboard Overview
-{% endblock %}
-
 {% block content %}
 
-<!-- Page Heading -->
 <div class="page-heading">
     <h4>Security Overview</h4>
     <p>Real-time monitoring and incident summary</p>
 </div>
 
-<!-- ── ROW 1: STAT CARDS ──────────────────────────────────── -->
-<div class="row g-4 mb-4">
+<!-- ── STAT CARDS ──────────────────────────────────────────── -->
+<div class="stats-mobile-grid mb-4">
 
-    <div class="col-md-2">
-        <div class="stat-card">
-            <div class="stat-icon blue">
-                <i class="bi bi-journal-text"></i>
-            </div>
-            <div class="stat-info">
-                <h3>{{ total_logs }}</h3>
-                <p>Total Logs</p>
-                <div class="stat-trend up">
-                    <i class="bi bi-arrow-up"></i> Live
-                </div>
-            </div>
+    <div class="stat-card">
+        <div class="stat-icon blue">
+            <i class="bi bi-journal-text"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ total_logs }}</h3>
+            <p>Total Logs</p>
+            <p style="font-size:10px;
+                      color:var(--success);">
+                ↑ Live
+            </p>
         </div>
     </div>
 
-    <div class="col-md-2">
-        <div class="stat-card">
-            <div class="stat-icon red">
-                <i class="bi bi-exclamation-triangle-fill"></i>
-            </div>
-            <div class="stat-info">
-                <h3>{{ total_alerts }}</h3>
-                <p>Open Alerts</p>
-                <div class="stat-trend up">
-                    <i class="bi bi-arrow-up"></i> Threats
-                </div>
-            </div>
+    <div class="stat-card"
+         onclick="window.location='{{ url_for('alerts') }}'"
+         style="cursor:pointer;">
+        <div class="stat-icon red">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ total_alerts }}</h3>
+            <p>Open Alerts</p>
+            <p style="font-size:10px;
+                      color:var(--danger);">
+                ↑ Threats
+            </p>
         </div>
     </div>
 
-    <div class="col-md-2">
-        <div class="stat-card">
-            <div class="stat-icon yellow">
-                <i class="bi bi-slash-circle-fill"></i>
-            </div>
-            <div class="stat-info">
-                <h3>{{ total_blocked }}</h3>
-                <p>Blocked IPs</p>
-                <div class="stat-trend down">
-                    <i class="bi bi-shield-check"></i> Safe
-                </div>
-            </div>
+    <div class="stat-card">
+        <div class="stat-icon yellow">
+            <i class="bi bi-slash-circle-fill"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ total_blocked }}</h3>
+            <p>Blocked IPs</p>
+            <p style="font-size:10px;
+                      color:var(--warning);">
+                ⛊ Safe
+            </p>
         </div>
     </div>
 
-    <div class="col-md-2">
-        <div class="stat-card">
-            <div class="stat-icon green">
-                <i class="bi bi-check-circle-fill"></i>
-            </div>
-            <div class="stat-info">
-                <h3>{{ total_resolved }}</h3>
-                <p>Resolved Alerts</p>
-                <div class="stat-trend down">
-                    <i class="bi bi-check2"></i> Clear
-                </div>
-            </div>
+    <div class="stat-card">
+        <div class="stat-icon green">
+            <i class="bi bi-check-circle-fill"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ total_resolved }}</h3>
+            <p>Resolved Alerts</p>
+            <p style="font-size:10px;
+                      color:var(--success);">
+                ✓ Clear
+            </p>
         </div>
     </div>
 
-    <div class="col-md-2">
-        <a href="{{ url_for('it_support') }}"
-           style="text-decoration:none;">
-            <div class="stat-card">
-                <div class="stat-icon blue">
-                    <i class="bi bi-headset"></i>
-                </div>
-                <div class="stat-info">
-                    <h3>{{ open_tickets }}</h3>
-                    <p>Open Tickets</p>
-                    <div class="stat-trend up">
-                        <i class="bi bi-arrow-right"></i> View
-                    </div>
-                </div>
-            </div>
-        </a>
+    <div class="stat-card"
+         onclick="window.location='{{ url_for('it_support') }}'"
+         style="cursor:pointer;">
+        <div class="stat-icon purple">
+            <i class="bi bi-headset"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ open_tickets }}</h3>
+            <p>Open Tickets</p>
+            <p style="font-size:10px;
+                      color:var(--accent);">
+                → View
+            </p>
+        </div>
     </div>
 
-    <div class="col-md-2">
-        <a href="{{ url_for('banking_alerts') }}"
-           style="text-decoration:none;">
-            <div class="stat-card">
-                <div class="stat-icon yellow">
-                    <i class="bi bi-bank2"></i>
-                </div>
-                <div class="stat-info">
-                    <h3>{{ pending_tx }}</h3>
-                    <p>Pending TX</p>
-                    <div class="stat-trend up">
-                        <i class="bi bi-arrow-right"></i> Review
-                    </div>
-                </div>
-            </div>
-        </a>
+    <div class="stat-card"
+         onclick="window.location='{{ url_for('banking_alerts') }}'"
+         style="cursor:pointer;">
+        <div class="stat-icon yellow">
+            <i class="bi bi-bank2"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ pending_tx }}</h3>
+            <p>Pending TX</p>
+            <p style="font-size:10px;
+                      color:var(--warning);">
+                → Review
+            </p>
+        </div>
     </div>
 
 </div>
 
-<!-- ── ROW 2: CHARTS ──────────────────────────────────────── -->
-<div class="row g-4 mb-4">
+<!-- ── CHARTS ─────────────────────────────────────────────── -->
+<div class="row g-3 mb-4">
 
     <!-- Login Activity Chart -->
-    <div class="col-md-8">
-        <div class="dark-card">
-            <div class="card-header">
-                <span>
-                    <i class="bi bi-bar-chart-fill text-info me-2"></i>
-                    Login Activity (Last 7 Days)
-                </span>
+    <div class="col-12 col-lg-8 chart-col">
+        <div class="table-card" style="padding:20px;">
+            <div style="font-size:14px;
+                        font-weight:700;
+                        color:var(--text);
+                        margin-bottom:16px;
+                        display:flex;
+                        align-items:center;
+                        gap:8px;">
+                <i class="bi bi-bar-chart-fill"
+                   style="color:var(--accent2);"></i>
+                Login Activity (Last 7 Days)
             </div>
-            <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="loginChart"></canvas>
-                </div>
-            </div>
+            <canvas id="loginChart"
+                    style="max-height:220px;"></canvas>
         </div>
     </div>
 
-    <!-- Alert Types Pie Chart -->
-    <div class="col-md-4">
-        <div class="dark-card">
-            <div class="card-header">
-                <span>
-                    <i class="bi bi-pie-chart-fill text-warning me-2"></i>
-                    Alert Types
-                </span>
+    <!-- Alert Types Chart -->
+    <div class="col-12 col-lg-4 chart-col">
+        <div class="table-card" style="padding:20px;">
+            <div style="font-size:14px;
+                        font-weight:700;
+                        color:var(--text);
+                        margin-bottom:16px;
+                        display:flex;
+                        align-items:center;
+                        gap:8px;">
+                <i class="bi bi-pie-chart-fill"
+                   style="color:var(--warning);"></i>
+                Alert Types
             </div>
-            <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="alertChart"></canvas>
-                </div>
-            </div>
+            <canvas id="alertChart"
+                    style="max-height:220px;"></canvas>
         </div>
     </div>
 
 </div>
 
-<!-- ── ROW 3: RECENT TABLES ───────────────────────────────── -->
-<div class="row g-4">
+<!-- ── RECENT ALERTS + LOGS ───────────────────────────────── -->
+<div class="row g-3">
 
     <!-- Recent Alerts -->
-    <div class="col-md-6">
-        <div class="dark-card">
-            <div class="card-header">
-                <span>
-                    <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>
+    <div class="col-12 col-lg-6">
+        <div class="table-card">
+            <div class="table-card-header">
+                <div class="table-card-title">
+                    <i class="bi bi-exclamation-triangle-fill"
+                       style="color:var(--danger);"></i>
                     Recent Alerts
-                </span>
+                </div>
                 <a href="{{ url_for('alerts') }}"
-                   class="btn btn-sm btn-purple">View All</a>
+                   class="btn-purple"
+                   style="padding:6px 12px;
+                          font-size:12px;">
+                    View All
+                </a>
             </div>
-            <div class="card-body">
-                {% if recent_alerts %}
-                <table class="table table-dark table-hover">
+
+            {% if recent_alerts %}
+            <div class="table-responsive-sw">
+                <table class="sw-table">
                     <thead>
                         <tr>
                             <th>IP Address</th>
-                            <th>Type</th>
+                            <th>Alert Type</th>
                             <th>Severity</th>
+                            <th>Time</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for alert in recent_alerts %}
-                        <tr class="alert-row-{{ alert['severity'] }}">
-                            <td><code style="color:#58a6ff">{{ alert['ip_address'] }}</code></td>
-                            <td>{{ alert['alert_type'] }}</td>
+                        <tr>
                             <td>
-                                <span class="badge-{{ alert['severity'] }}">
-                                    {{ alert['severity']|capitalize }}
+                                <code>
+                                    {{ alert.ip_address }}
+                                </code>
+                            </td>
+                            <td style="font-size:12px;">
+                                {{ alert.alert_type }}
+                            </td>
+                            <td>
+                                <span class="badge-sw
+                                    badge-{{ alert.severity }}">
+                                    {{ alert.severity
+                                       |upper }}
                                 </span>
+                            </td>
+                            <td style="font-size:11px;
+                                       color:var(--text-muted);">
+                                {{ alert.timestamp[:16] }}
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-                {% else %}
-                <div class="empty-state">
-                    <i class="bi bi-check-circle text-success"></i>
-                    <p>No open alerts — system is secure</p>
-                </div>
-                {% endif %}
             </div>
+            {% else %}
+            <div style="padding:32px;
+                        text-align:center;
+                        color:var(--text-muted);">
+                <i class="bi bi-shield-check"
+                   style="font-size:32px;
+                          color:var(--success);
+                          display:block;
+                          margin-bottom:10px;"></i>
+                No open alerts — system is secure
+            </div>
+            {% endif %}
         </div>
     </div>
 
     <!-- Recent Logs -->
-    <div class="col-md-6">
-        <div class="dark-card">
-            <div class="card-header">
-                <span>
-                    <i class="bi bi-journal-text text-info me-2"></i>
+    <div class="col-12 col-lg-6">
+        <div class="table-card">
+            <div class="table-card-header">
+                <div class="table-card-title">
+                    <i class="bi bi-journal-text"
+                       style="color:var(--accent2);"></i>
                     Recent Logs
-                </span>
+                </div>
                 <a href="{{ url_for('logs') }}"
-                   class="btn btn-sm btn-purple">View All</a>
+                   class="btn-purple"
+                   style="padding:6px 12px;
+                          font-size:12px;">
+                    View All
+                </a>
             </div>
-            <div class="card-body">
-                {% if recent_logs %}
-                <table class="table table-dark table-hover">
+
+            {% if recent_logs %}
+            <div class="table-responsive-sw">
+                <table class="sw-table">
                     <thead>
                         <tr>
                             <th>IP Address</th>
@@ -225,34 +249,76 @@
                     <tbody>
                         {% for log in recent_logs %}
                         <tr>
-                            <td><code style="color:#58a6ff">{{ log['ip_address'] }}</code></td>
-                            <td>{{ log['event_type'] }}</td>
-                            <td style="color:#8b949e; font-size:12px">
-                                {{ log['timestamp'] }}
+                            <td>
+                                <code>
+                                    {{ log.ip_address }}
+                                </code>
+                            </td>
+                            <td>
+                                {% set et = log.event_type %}
+                                {% if et == 'failed_login' %}
+                                    <span class="badge-sw
+                                          badge-high">
+                                        Failed Login
+                                    </span>
+                                {% elif et ==
+                                       'successful_login' %}
+                                    <span class="badge-sw
+                                          badge-success">
+                                        Login OK
+                                    </span>
+                                {% elif et ==
+                                       'suspicious_activity' %}
+                                    <span class="badge-sw
+                                          badge-medium">
+                                        Suspicious
+                                    </span>
+                                {% else %}
+                                    <span class="badge-sw
+                                          badge-muted">
+                                        {{ et|replace(
+                                           '_',' ')|
+                                           capitalize }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td style="font-size:11px;
+                                       color:var(--text-muted);">
+                                {{ log.timestamp[:16] }}
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-                {% else %}
-                <div class="empty-state">
-                    <i class="bi bi-inbox"></i>
-                    <p>No logs recorded yet</p>
-                </div>
-                {% endif %}
             </div>
+            {% else %}
+            <div style="padding:32px;
+                        text-align:center;
+                        color:var(--text-muted);">
+                <i class="bi bi-inbox"
+                   style="font-size:28px;
+                          display:block;
+                          margin-bottom:10px;"></i>
+                No logs yet
+            </div>
+            {% endif %}
         </div>
     </div>
 
 </div>
 
-{% endblock %}
-
-<!-- ── CHARTS JAVASCRIPT ───────────────────────────────────── -->
-{% block scripts %}
+<!-- ── CHART.JS ───────────────────────────────────────────── -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-// ── LOGIN ACTIVITY BAR CHART ──────────────────────────────────
-const loginCtx = document.getElementById('loginChart').getContext('2d');
+Chart.defaults.color = '#8b949e';
+Chart.defaults.font.family =
+    "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+Chart.defaults.font.size = 11;
+
+// ── Login Activity Bar Chart ─────────────────────────────
+var loginCtx = document.getElementById(
+    'loginChart').getContext('2d');
+
 new Chart(loginCtx, {
     type: 'bar',
     data: {
@@ -261,70 +327,96 @@ new Chart(loginCtx, {
             {
                 label: 'Successful Logins',
                 data: {{ chart_success | tojson }},
-                backgroundColor: 'rgba(63, 185, 80, 0.7)',
+                backgroundColor:
+                    'rgba(63,185,80,0.7)',
                 borderColor: '#3fb950',
                 borderWidth: 1,
-                borderRadius: 6,
+                borderRadius: 4,
             },
             {
                 label: 'Failed Logins',
                 data: {{ chart_failed | tojson }},
-                backgroundColor: 'rgba(248, 81, 73, 0.7)',
+                backgroundColor:
+                    'rgba(248,81,73,0.7)',
                 borderColor: '#f85149',
                 borderWidth: 1,
-                borderRadius: 6,
+                borderRadius: 4,
             }
         ]
     },
     options: {
         responsive: true,
-        maintainAspectRatio: false,
+        maintainAspectRatio: true,
         plugins: {
-            legend: { labels: { color: '#8b949e', font: { size: 12 } } }
+            legend: {
+                position: 'top',
+                labels: { color: '#8b949e',
+                          boxWidth: 12 }
+            }
         },
         scales: {
             x: {
-                ticks: { color: '#8b949e' },
-                grid:  { color: 'rgba(48,54,61,0.5)' }
+                grid: {
+                    color: 'rgba(48,54,61,0.8)'
+                },
+                ticks: { color: '#8b949e' }
             },
             y: {
-                ticks: { color: '#8b949e' },
-                grid:  { color: 'rgba(48,54,61,0.5)' },
+                grid: {
+                    color: 'rgba(48,54,61,0.8)'
+                },
+                ticks: {
+                    color: '#8b949e',
+                    stepSize: 1
+                },
                 beginAtZero: true
             }
         }
     }
 });
 
-// ── ALERT TYPES DOUGHNUT CHART ────────────────────────────────
-const alertCtx = document.getElementById('alertChart').getContext('2d');
+// ── Alert Types Doughnut Chart ───────────────────────────
+var alertCtx = document.getElementById(
+    'alertChart').getContext('2d');
+
+var alertLabels = {{ alert_types | tojson }};
+var alertData   = {{ alert_counts | tojson }};
+
 new Chart(alertCtx, {
     type: 'doughnut',
     data: {
-        labels: {{ alert_types | tojson }},
+        labels: alertLabels,
         datasets: [{
-            data: {{ alert_counts | tojson }},
+            data: alertData,
             backgroundColor: [
-                'rgba(248, 81,  73,  0.8)',
-                'rgba(210, 153,  34, 0.8)',
-                'rgba(88,  166, 255, 0.8)',
-                'rgba(123, 111, 240, 0.8)',
-                'rgba(63,  185,  80, 0.8)',
+                'rgba(248,81,73,0.8)',
+                'rgba(210,153,34,0.8)',
+                'rgba(123,111,240,0.8)',
+                'rgba(88,166,255,0.8)',
+                'rgba(63,185,80,0.8)',
+                'rgba(139,148,158,0.8)',
             ],
             borderColor: '#161b22',
-            borderWidth: 3,
+            borderWidth: 2,
         }]
     },
     options: {
         responsive: true,
-        maintainAspectRatio: false,
+        maintainAspectRatio: true,
+        cutout: '65%',
         plugins: {
             legend: {
                 position: 'bottom',
-                labels: { color: '#8b949e', font: { size: 11 }, padding: 12 }
+                labels: {
+                    color: '#8b949e',
+                    boxWidth: 10,
+                    padding: 10,
+                    font: { size: 10 }
+                }
             }
         }
     }
 });
 </script>
+
 {% endblock %}

@@ -1,422 +1,300 @@
-{% extends "base.html" %}
-{% block title %}Dashboard{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechCorp Bank — Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/bank.css') }}" rel="stylesheet">
+</head>
+<body>
 
-{% block content %}
-
-<div class="page-heading">
-    <h4>Security Overview</h4>
-    <p>Real-time monitoring and incident summary</p>
-</div>
-
-<!-- ── STAT CARDS ──────────────────────────────────────────── -->
-<div class="stats-mobile-grid mb-4">
-
-    <div class="stat-card">
-        <div class="stat-icon blue">
-            <i class="bi bi-journal-text"></i>
-        </div>
-        <div class="stat-info">
-            <h3>{{ total_logs }}</h3>
-            <p>Total Logs</p>
-            <p style="font-size:10px;
-                      color:var(--success);">
-                ↑ Live
-            </p>
-        </div>
-    </div>
-
-    <div class="stat-card"
-         onclick="window.location='{{ url_for('alerts') }}'"
-         style="cursor:pointer;">
-        <div class="stat-icon red">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-        </div>
-        <div class="stat-info">
-            <h3>{{ total_alerts }}</h3>
-            <p>Open Alerts</p>
-            <p style="font-size:10px;
-                      color:var(--danger);">
-                ↑ Threats
-            </p>
-        </div>
-    </div>
-
-    <div class="stat-card">
-        <div class="stat-icon yellow">
-            <i class="bi bi-slash-circle-fill"></i>
-        </div>
-        <div class="stat-info">
-            <h3>{{ total_blocked }}</h3>
-            <p>Blocked IPs</p>
-            <p style="font-size:10px;
-                      color:var(--warning);">
-                ⛊ Safe
-            </p>
-        </div>
-    </div>
-
-    <div class="stat-card">
-        <div class="stat-icon green">
-            <i class="bi bi-check-circle-fill"></i>
-        </div>
-        <div class="stat-info">
-            <h3>{{ total_resolved }}</h3>
-            <p>Resolved Alerts</p>
-            <p style="font-size:10px;
-                      color:var(--success);">
-                ✓ Clear
-            </p>
-        </div>
-    </div>
-
-    <div class="stat-card"
-         onclick="window.location='{{ url_for('it_support') }}'"
-         style="cursor:pointer;">
-        <div class="stat-icon purple">
-            <i class="bi bi-headset"></i>
-        </div>
-        <div class="stat-info">
-            <h3>{{ open_tickets }}</h3>
-            <p>Open Tickets</p>
-            <p style="font-size:10px;
-                      color:var(--accent);">
-                → View
-            </p>
-        </div>
-    </div>
-
-    <div class="stat-card"
-         onclick="window.location='{{ url_for('banking_alerts') }}'"
-         style="cursor:pointer;">
-        <div class="stat-icon yellow">
+<!-- App Navbar -->
+<nav class="app-navbar">
+    <a href="/" class="app-brand">
+        <div class="app-brand-icon">
             <i class="bi bi-bank2"></i>
         </div>
-        <div class="stat-info">
-            <h3>{{ pending_tx }}</h3>
-            <p>Pending TX</p>
-            <p style="font-size:10px;
-                      color:var(--warning);">
-                → Review
-            </p>
-        </div>
+        <span class="app-brand-name">
+            TechCorp <span>Bank</span>
+        </span>
+    </a>
+
+    <div class="app-nav-links">
+        <a href="{{ url_for('dashboard') }}"
+           class="app-nav-link active">
+            <i class="bi bi-speedometer2"></i>Dashboard
+        </a>
+        <a href="{{ url_for('transfer') }}"
+           class="app-nav-link">
+            <i class="bi bi-send"></i>Transfer
+        </a>
+        <a href="{{ url_for('transactions') }}"
+           class="app-nav-link">
+            <i class="bi bi-list-ul"></i>Transactions
+        </a>
+        <a href="{{ url_for('cards') }}"
+           class="app-nav-link">
+            <i class="bi bi-credit-card"></i>Cards
+        </a>
+        <a href="{{ url_for('support') }}"
+           class="app-nav-link">
+            <i class="bi bi-headset"></i>Support
+        </a>
     </div>
 
-</div>
-
-<!-- ── CHARTS ─────────────────────────────────────────────── -->
-<div class="row g-3 mb-4">
-
-    <!-- Login Activity Chart -->
-    <div class="col-12 col-lg-8 chart-col">
-        <div class="table-card" style="padding:20px;">
-            <div style="font-size:14px;
-                        font-weight:700;
-                        color:var(--text);
-                        margin-bottom:16px;
-                        display:flex;
-                        align-items:center;
-                        gap:8px;">
-                <i class="bi bi-bar-chart-fill"
-                   style="color:var(--accent2);"></i>
-                Login Activity (Last 7 Days)
+    <div class="app-user-menu">
+        <div class="app-avatar">{{ account.name[0] }}</div>
+        <div class="app-user-info">
+            <div class="app-user-name">
+                {{ account.name.split()[0] }}
             </div>
-            <canvas id="loginChart"
-                    style="max-height:220px;"></canvas>
-        </div>
-    </div>
-
-    <!-- Alert Types Chart -->
-    <div class="col-12 col-lg-4 chart-col">
-        <div class="table-card" style="padding:20px;">
-            <div style="font-size:14px;
-                        font-weight:700;
-                        color:var(--text);
-                        margin-bottom:16px;
-                        display:flex;
-                        align-items:center;
-                        gap:8px;">
-                <i class="bi bi-pie-chart-fill"
-                   style="color:var(--warning);"></i>
-                Alert Types
+            <div class="app-user-role">
+                {{ account.account_type }}
             </div>
-            <canvas id="alertChart"
-                    style="max-height:220px;"></canvas>
         </div>
+        <a href="{{ url_for('logout') }}" class="app-logout">
+            <i class="bi bi-box-arrow-right"></i>
+            Logout
+        </a>
     </div>
+</nav>
 
-</div>
+<div class="app-layout">
 
-<!-- ── RECENT ALERTS + LOGS ───────────────────────────────── -->
-<div class="row g-3">
+    <!-- Sidebar -->
+    <aside class="app-sidebar">
 
-    <!-- Recent Alerts -->
-    <div class="col-12 col-lg-6">
-        <div class="table-card">
-            <div class="table-card-header">
-                <div class="table-card-title">
-                    <i class="bi bi-exclamation-triangle-fill"
-                       style="color:var(--danger);"></i>
-                    Recent Alerts
+        <div class="sidebar-section-label">Overview</div>
+        <a href="{{ url_for('dashboard') }}"
+           class="sidebar-link active">
+            <i class="bi bi-speedometer2"></i>Dashboard
+        </a>
+        <a href="{{ url_for('transactions') }}"
+           class="sidebar-link">
+            <i class="bi bi-clock-history"></i>
+            Transaction History
+        </a>
+
+        <div class="sidebar-section-label">Banking</div>
+        <a href="{{ url_for('transfer') }}"
+           class="sidebar-link">
+            <i class="bi bi-send-fill"></i>Fund Transfer
+        </a>
+        <a href="{{ url_for('cards') }}"
+           class="sidebar-link">
+            <i class="bi bi-credit-card-2-front"></i>
+            Card Management
+        </a>
+
+        <div class="sidebar-section-label">Help</div>
+        <a href="{{ url_for('support') }}"
+           class="sidebar-link">
+            <i class="bi bi-ticket-perforated"></i>
+            Support Tickets
+        </a>
+
+        <div style="margin-top:auto; padding-top:20px;">
+            <div class="monitor-badge"
+                 style="width:100%; justify-content:center;">
+                <span class="dot"></span>
+                SecureWatch Active
+            </div>
+        </div>
+
+    </aside>
+
+    <!-- Main content -->
+    <main class="app-main">
+
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(
+            with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="app-alert {{ category }}">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span>{{ message }}</span>
                 </div>
-                <a href="{{ url_for('alerts') }}"
-                   class="btn-purple"
-                   style="padding:6px 12px;
-                          font-size:12px;">
-                    View All
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="page-title">
+            Hi, {{ account.name.split()[0] }} 
+        </div>
+        <div class="page-subtitle">
+            Here's your financial overview for today
+        </div>
+
+        <!-- Balance hero card -->
+        <div class="balance-hero">
+            <div class="balance-hero-inner">
+                <div>
+                    <div class="balance-label-text">
+                        Available Balance
+                    </div>
+                    <div class="balance-amount-large">
+                        <span class="currency">FCFA</span>
+                        {{ "%.2f"|format(account.balance) }}
+                    </div>
+                    <div class="balance-account-num">
+                        {{ account.account_number }}
+                    </div>
+                </div>
+                <div class="balance-right">
+                    <div class="balance-type-badge">
+                        {{ account.account_type }}
+                    </div>
+                    <div class="balance-card-mini">
+                        <div style="font-size:10px;
+                                    color:rgba(255,255,255,0.4);
+                                    margin-bottom:2px;">
+                            Card Status
+                        </div>
+                        {% if account.card_frozen %}
+                            <span style="color:#f87171;
+                                         font-weight:600;
+                                         font-size:13px;">
+                                ❄️ Frozen
+                            </span>
+                        {% else %}
+                            <span style="color:#34d399;
+                                         font-weight:600;
+                                         font-size:13px;">
+                                ✓ Active
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="quick-action-bar">
+                <a href="{{ url_for('transfer') }}"
+                   class="quick-action-btn">
+                    <i class="bi bi-send-fill"></i>Transfer
+                </a>
+                <a href="{{ url_for('transactions') }}"
+                   class="quick-action-btn">
+                    <i class="bi bi-list-ul"></i>History
+                </a>
+                <a href="{{ url_for('cards') }}"
+                   class="quick-action-btn">
+                    <i class="bi bi-credit-card"></i>My Card
+                </a>
+                <a href="{{ url_for('support') }}"
+                   class="quick-action-btn">
+                    <i class="bi bi-headset"></i>Support
                 </a>
             </div>
+        </div>
 
-            {% if recent_alerts %}
-            <div class="table-responsive-sw">
-                <table class="sw-table">
-                    <thead>
-                        <tr>
-                            <th>IP Address</th>
-                            <th>Alert Type</th>
-                            <th>Severity</th>
-                            <th>Time</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for alert in recent_alerts %}
-                        <tr>
-                            <td>
-                                <code>
-                                    {{ alert.ip_address }}
-                                </code>
-                            </td>
-                            <td style="font-size:12px;">
-                                {{ alert.alert_type }}
-                            </td>
-                            <td>
-                                <span class="badge-sw
-                                    badge-{{ alert.severity }}">
-                                    {{ alert.severity
-                                       |upper }}
+        <!-- Stats row -->
+        <div class="stats-row">
+
+            <div class="stat-card-app">
+                <div class="stat-card-icon green">
+                    <i class="bi bi-arrow-down-circle-fill"></i>
+                </div>
+                <div>
+                    <div class="stat-card-value"
+                         style="color:var(--success);">
+                        FCFA{{ "%.2f"|format(total_in) }}
+                    </div>
+                    <div class="stat-card-label">
+                        Total Money In
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card-app">
+                <div class="stat-card-icon red">
+                    <i class="bi bi-arrow-up-circle-fill"></i>
+                </div>
+                <div>
+                    <div class="stat-card-value"
+                         style="color:var(--danger);">
+                        FCFA{{ "%.2f"|format(total_out) }}
+                    </div>
+                    <div class="stat-card-label">
+                        Total Money Out
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card-app">
+                <div class="stat-card-icon blue">
+                    <i class="bi bi-receipt"></i>
+                </div>
+                <div>
+                    <div class="stat-card-value">
+                        {{ recent_txns|length }}
+                    </div>
+                    <div class="stat-card-label">
+                        Recent Transactions
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Recent transactions -->
+        <div class="data-card">
+            <div class="data-card-header">
+                <div class="data-card-title">
+                    <i class="bi bi-clock-history"></i>
+                    Recent Transactions
+                </div>
+                <a href="{{ url_for('transactions') }}"
+                   class="data-card-action">
+                    View All <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+            <div class="data-card-body">
+                {% if recent_txns %}
+                    {% for tx in recent_txns %}
+                    <div class="tx-row">
+                        <div class="tx-icon-wrap {{ tx.type }}">
+                            {% if tx.type == 'credit' %}
+                                <i class="bi bi-arrow-down"></i>
+                            {% else %}
+                                <i class="bi bi-arrow-up"></i>
+                            {% endif %}
+                        </div>
+                        <div style="flex:1;">
+                            <div class="tx-name">
+                                {{ tx.description }}
+                            </div>
+                            <div class="tx-date">
+                                {{ tx.date }} •
+                                <span style="font-family:monospace;
+                                             font-size:11px;">
+                                    {{ tx.id }}
                                 </span>
-                            </td>
-                            <td style="font-size:11px;
-                                       color:var(--text-muted);">
-                                {{ alert.timestamp[:16] }}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                            </div>
+                        </div>
+                        <div class="tx-amount-text {{ tx.type }}">
+                            {% if tx.type == 'credit' %}+{% else %}−{% endif %}
+                            FCFA{{ "%.2f"|format(tx.amount) }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="text-align:center;
+                                padding:40px;
+                                color:var(--text-secondary);">
+                        <i class="bi bi-inbox"
+                           style="font-size:32px;
+                                  display:block;
+                                  margin-bottom:10px;"></i>
+                        No transactions yet
+                    </div>
+                {% endif %}
             </div>
-            {% else %}
-            <div style="padding:32px;
-                        text-align:center;
-                        color:var(--text-muted);">
-                <i class="bi bi-shield-check"
-                   style="font-size:32px;
-                          color:var(--success);
-                          display:block;
-                          margin-bottom:10px;"></i>
-                No open alerts — system is secure
-            </div>
-            {% endif %}
         </div>
-    </div>
 
-    <!-- Recent Logs -->
-    <div class="col-12 col-lg-6">
-        <div class="table-card">
-            <div class="table-card-header">
-                <div class="table-card-title">
-                    <i class="bi bi-journal-text"
-                       style="color:var(--accent2);"></i>
-                    Recent Logs
-                </div>
-                <a href="{{ url_for('logs') }}"
-                   class="btn-purple"
-                   style="padding:6px 12px;
-                          font-size:12px;">
-                    View All
-                </a>
-            </div>
-
-            {% if recent_logs %}
-            <div class="table-responsive-sw">
-                <table class="sw-table">
-                    <thead>
-                        <tr>
-                            <th>IP Address</th>
-                            <th>Event</th>
-                            <th>Time</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for log in recent_logs %}
-                        <tr>
-                            <td>
-                                <code>
-                                    {{ log.ip_address }}
-                                </code>
-                            </td>
-                            <td>
-                                {% set et = log.event_type %}
-                                {% if et == 'failed_login' %}
-                                    <span class="badge-sw
-                                          badge-high">
-                                        Failed Login
-                                    </span>
-                                {% elif et ==
-                                       'successful_login' %}
-                                    <span class="badge-sw
-                                          badge-success">
-                                        Login OK
-                                    </span>
-                                {% elif et ==
-                                       'suspicious_activity' %}
-                                    <span class="badge-sw
-                                          badge-medium">
-                                        Suspicious
-                                    </span>
-                                {% else %}
-                                    <span class="badge-sw
-                                          badge-muted">
-                                        {{ et|replace(
-                                           '_',' ')|
-                                           capitalize }}
-                                    </span>
-                                {% endif %}
-                            </td>
-                            <td style="font-size:11px;
-                                       color:var(--text-muted);">
-                                {{ log.timestamp[:16] }}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div style="padding:32px;
-                        text-align:center;
-                        color:var(--text-muted);">
-                <i class="bi bi-inbox"
-                   style="font-size:28px;
-                          display:block;
-                          margin-bottom:10px;"></i>
-                No logs yet
-            </div>
-            {% endif %}
-        </div>
-    </div>
-
+    </main>
 </div>
 
-<!-- ── CHART.JS ───────────────────────────────────────────── -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script>
-Chart.defaults.color = '#8b949e';
-Chart.defaults.font.family =
-    "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-Chart.defaults.font.size = 11;
-
-// ── Login Activity Bar Chart ─────────────────────────────
-var loginCtx = document.getElementById(
-    'loginChart').getContext('2d');
-
-new Chart(loginCtx, {
-    type: 'bar',
-    data: {
-        labels: {{ chart_labels | tojson }},
-        datasets: [
-            {
-                label: 'Successful Logins',
-                data: {{ chart_success | tojson }},
-                backgroundColor:
-                    'rgba(63,185,80,0.7)',
-                borderColor: '#3fb950',
-                borderWidth: 1,
-                borderRadius: 4,
-            },
-            {
-                label: 'Failed Logins',
-                data: {{ chart_failed | tojson }},
-                backgroundColor:
-                    'rgba(248,81,73,0.7)',
-                borderColor: '#f85149',
-                borderWidth: 1,
-                borderRadius: 4,
-            }
-        ]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-            legend: {
-                position: 'top',
-                labels: { color: '#8b949e',
-                          boxWidth: 12 }
-            }
-        },
-        scales: {
-            x: {
-                grid: {
-                    color: 'rgba(48,54,61,0.8)'
-                },
-                ticks: { color: '#8b949e' }
-            },
-            y: {
-                grid: {
-                    color: 'rgba(48,54,61,0.8)'
-                },
-                ticks: {
-                    color: '#8b949e',
-                    stepSize: 1
-                },
-                beginAtZero: true
-            }
-        }
-    }
-});
-
-// ── Alert Types Doughnut Chart ───────────────────────────
-var alertCtx = document.getElementById(
-    'alertChart').getContext('2d');
-
-var alertLabels = {{ alert_types | tojson }};
-var alertData   = {{ alert_counts | tojson }};
-
-new Chart(alertCtx, {
-    type: 'doughnut',
-    data: {
-        labels: alertLabels,
-        datasets: [{
-            data: alertData,
-            backgroundColor: [
-                'rgba(248,81,73,0.8)',
-                'rgba(210,153,34,0.8)',
-                'rgba(123,111,240,0.8)',
-                'rgba(88,166,255,0.8)',
-                'rgba(63,185,80,0.8)',
-                'rgba(139,148,158,0.8)',
-            ],
-            borderColor: '#161b22',
-            borderWidth: 2,
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        cutout: '65%',
-        plugins: {
-            legend: {
-                position: 'bottom',
-                labels: {
-                    color: '#8b949e',
-                    boxWidth: 10,
-                    padding: 10,
-                    font: { size: 10 }
-                }
-            }
-        }
-    }
-});
-</script>
-
-{% endblock %}
+</body>
+</html>
