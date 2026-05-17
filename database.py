@@ -39,19 +39,27 @@ def init_db():
         )
     ''')
 
-    # ── TABLE 3: alerts ─────────────────────────────────────────
+  # ── TABLE 3: alerts ─────────────────────────────────────────
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS alerts (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             ip_address  TEXT NOT NULL,
             alert_type  TEXT NOT NULL,
+            message     TEXT,
             description TEXT,
             severity    TEXT DEFAULT 'medium',
             status      TEXT DEFAULT 'open',
             timestamp   DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-
+# ── Migrate alerts table — add message column if missing ────
+    try:
+        cursor.execute(
+            'ALTER TABLE alerts ADD COLUMN message TEXT')
+        print("✅ Added 'message' column to alerts table")
+    except Exception:
+        pass  # Column already exists
+        
     # ── TABLE 4: blocked_ips ────────────────────────────────────
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS blocked_ips (

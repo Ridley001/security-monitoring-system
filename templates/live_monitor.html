@@ -758,20 +758,76 @@ function fetchLogs() {
     if (currentSource) url += 'source=' + currentSource + '&';
     if (!isInitial)    url += 'since=' + lastLogId;
 
-    fetch(url)
-        .then(function(r) { return r.json(); })
+    fetch(url, {
+        credentials: 'same-origin',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+        .then(function(r) {
+            if (!r.ok) {
+                throw new Error('HTTP ' + r.status);
+            }
+            return r.json();
+        })
         .then(function(data) {
             renderLogs(data.logs, isInitial);
             renderAlerts(data.alerts);
             updateSourceStatus(data.logs);
 
-            document.getElementById('statTodayEvents')
-                .textContent = data.today_events;
-            document.getElementById('statThreats')
-                .textContent = data.today_threats;
+            const te = document.getElementById(
+                'statTodayEvents');
+            const tt = document.getElementById(
+                'statThreats');
+            if (te) te.textContent = data.today_events;
+            if (tt) tt.textContent = data.today_threats;
         })
         .catch(function(err) {
             console.log('Fetch error:', err);
+            // Show error in feed instead of staying stuck
+            const feed = document.getElementById('logFeed');
+            if (feed && lastLogId === 0) {
+                feed.innerHTML =
+                    '<div style="text-align:center;' +
+                    'padding:40px;color:#8b949e;">' +
+                    '<i class="bi bi-wifi-off" ' +
+                    'style="font-size:32px;display:block;' +
+                    'margin-bottom:10px;"></i>' +
+                    'Connection error — retrying...' +
+                    '</div>';
+            }
+        });
+}
+
+function fetchStats() {
+    fetch('/api/live-stats', {
+        credentials: 'same-origin',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+        .then(function(r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        })
+        .then(function(data) {
+            const te = document.getElementById(
+                'statTodayEvents');
+            const tt = document.getElementById(
+                'statThreats');
+            const tb = document.getElementById(
+                'statBlocked');
+            const la = document.getElementById(
+                'statLastActivity');
+            if (te) te.textContent = data.today_events;
+            if (tt) tt.textContent = data.today_threats;
+            if (tb) tb.textContent = data.total_blocked;
+            if (la) {
+                const t = data.last_activity;
+                if (t && t !== 'No activity yet') {
+                    la.textContent =
+                        String(t).substring(11, 19);
+                }
+            }
+        })
+        .catch(function(err) {
+            console.log('Stats error:', err);
         });
 }
 

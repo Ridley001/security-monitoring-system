@@ -499,15 +499,25 @@ def alerts():
     query += ' ORDER BY timestamp DESC'
 
     all_alerts     = db.execute(query, params).fetchall()
-    open_count     = db.execute('SELECT COUNT(*) FROM alerts WHERE status = "open"').fetchone()[0]
-    resolved_count = db.execute('SELECT COUNT(*) FROM alerts WHERE status = "resolved"').fetchone()[0]
-    high_count     = db.execute('SELECT COUNT(*) FROM alerts WHERE severity = "high" AND status = "open"').fetchone()[0]
-    total_count    = db.execute('SELECT COUNT(*) FROM alerts').fetchone()[0]
+    open_count     = db.execute(
+        'SELECT COUNT(*) FROM alerts '
+        'WHERE status = "open"').fetchone()[0]
+    resolved_count = db.execute(
+        'SELECT COUNT(*) FROM alerts '
+        'WHERE status = "resolved"').fetchone()[0]
+    high_count     = db.execute(
+        'SELECT COUNT(*) FROM alerts '
+        'WHERE severity = "high" '
+        'AND status = "open"').fetchone()[0]
+    total_count    = db.execute(
+        'SELECT COUNT(*) FROM alerts').fetchone()[0]
     alert_count    = open_count
 
     blocked_ip_list = [
         row['ip_address'] for row in
-        db.execute('SELECT ip_address FROM blocked_ips').fetchall()
+        db.execute(
+            'SELECT ip_address FROM blocked_ips'
+        ).fetchall()
     ]
     db.close()
 
@@ -522,6 +532,34 @@ def alerts():
                            search=search,
                            severity=severity,
                            status=status)
+
+@app.route('/run-detection-now', methods=['POST'])
+@login_required
+def run_detection_now():
+    """Force-run detection on ALL logs in the database."""
+    db   = get_db()
+    logs = db.execute(
+        'SELECT ip_address, event_type FROM logs'
+    ).fetchall()
+    db.close()
+
+    fired = 0
+    for log in logs:
+        try:
+            run_detection(
+                log['ip_address'],
+                log['event_type']
+            )
+            fired += 1
+        except Exception as e:
+            print(f'Detection run error: {e}')
+
+    flash(
+        f'✅ Detection engine ran on {fired} logs. '
+        f'Check Alerts page.',
+        'success'
+    )
+    return redirect(url_for('alerts'))
 
 @app.route('/resolve-alert/<int:alert_id>', methods=['POST'])
 @login_required
@@ -822,8 +860,11 @@ def live_monitor():
                            sources=sources)
 
 @app.route('/api/live-logs')
-@login_required
 def api_live_logs():
+    # Allow if logged in OR if called from same origin
+    if 'user' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
     source = request.args.get('source', '').strip()
     since  = request.args.get('since',  '').strip()
     query  = 'SELECT * FROM logs WHERE 1=1'
@@ -835,19 +876,116 @@ def api_live_logs():
         query += ' AND id > ?'
         params.append(since)
     query += ' ORDER BY timestamp DESC LIMIT 50'
+
     db   = get_db()
     rows = db.execute(query, params).fetchall()
-    alerts = db.execute('SELECT * FROM alerts WHERE status = "open" ORDER BY timestamp DESC LIMIT 5').fetchall()
-    today_events  = db.execute('SELECT COUNT(*) FROM logs WHERE date(timestamp) = date("now")').fetchone()[0]
-    today_threats = db.execute('SELECT COUNT(*) FROM alerts WHERE date(timestamp) = date("now") AND status = "open"').fetchone()[0]
+    alerts_rows = db.execute(
+        'SELECT * FROM alerts WHERE status = "open" '
+        'ORDER BY timestamp DESC LIMIT 5'
+    ).fetchall()
+    today_events  = db.execute(
+        'SELECT COUNT(*) FROM logs '
+        'WHERE date(timestamp) = date("now")'
+    ).fetchone()[0]
+    today_threats = db.execute(
+        'SELECT COUNT(*) FROM alerts '
+        'WHERE date(timestamp) = date("now") '
+        'AND status = "open"'
+    ).fetchone()[0]
     db.close()
+
     return jsonify({
-        'logs':          [{'id': r['id'], 'ip_address': r['ip_address'], 'event_type': r['event_type'],
-                           'message': r['message'] or '', 'source': r['source'] or 'unknown', 'timestamp': r['timestamp']} for r in rows],
-        'alerts':        [{'id': a['id'], 'ip_address': a['ip_address'], 'alert_type': a['alert_type'],
-                           'severity': a['severity'], 'timestamp': a['timestamp']} for a in alerts],
+        'logs': [
+            {
+                'id':         r['id'],
+                'ip_address': r['ip_address'],
+                'event_type': r['event_type'],
+                'message':    r['message'] or '',
+                'source':     r['source'] or 'unknown',
+                'timestamp':  r['timestamp'],
+            }
+            for r in rows
+        ],
+        'alerts': [
+            {
+                'id':         a['id'],
+                'ip_address': a['ip_address'],
+                'alert_type': a['alert_type'],
+                'severity':   a['severity'],
+                'timestamp':  a['timestamp'],
+            }
+            for a in alerts_rows
+        ],
         'today_events':  today_events,
         'today_threats': today_threats,
+    })
+
+
+@app.route('/api/live-stats')
+def api_live_stats():
+    if 'user' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    db = get_db()
+    today_events  = db.execute(
+        'SELECT COUNT(*) FROM logs '
+        'WHERE date(timestamp) = date("now")'
+    ).fetchone()[0]
+    today_threats = db.execute(
+        'SELECT COUNT(*) FROM alerts '
+        'WHERE date(timestamp) = date("now") '
+        'AND status = "open"'
+    ).fetchone()[0]
+    total_blocked = db.execute(
+        'SELECT COUNT(*) FROM blocked_ips'
+    ).fetchone()[0]
+    latest_log = db.execute(
+        'SELECT timestamp FROM logs '
+        'ORDER BY timestamp DESC LIMIT 1'
+    ).fetchone()
+    db.close()
+
+    return jsonify({
+        'today_events':  today_events,
+        'today_threats': today_threats,
+        'total_blocked': total_blocked,
+        'last_activity': (latest_log['timestamp']
+                          if latest_log
+                          else 'No activity yet'),
+    })
+
+
+@app.route('/api/live-stats')
+def api_live_stats():
+    if 'user' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    db = get_db()
+    today_events  = db.execute(
+        'SELECT COUNT(*) FROM logs '
+        'WHERE date(timestamp) = date("now")'
+    ).fetchone()[0]
+    today_threats = db.execute(
+        'SELECT COUNT(*) FROM alerts '
+        'WHERE date(timestamp) = date("now") '
+        'AND status = "open"'
+    ).fetchone()[0]
+    total_blocked = db.execute(
+        'SELECT COUNT(*) FROM blocked_ips'
+    ).fetchone()[0]
+    latest_log = db.execute(
+        'SELECT timestamp FROM logs '
+        'ORDER BY timestamp DESC LIMIT 1'
+    ).fetchone()
+    db.close()
+
+    return jsonify({
+        'today_events':  today_events,
+        'today_threats': today_threats,
+        'total_blocked': total_blocked,
+        'last_activity': (latest_log['timestamp']
+                          if latest_log
+                          else 'No activity yet'),
     })
 
 @app.route('/api/live-stats')

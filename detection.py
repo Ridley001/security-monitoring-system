@@ -167,21 +167,21 @@ def _insert(db, ip, alert_type, severity, message):
     try:
         db.execute('''
             INSERT INTO alerts
-                (ip_address, alert_type,
-                 severity, message)
-            VALUES (?, ?, ?, ?)
-        ''', (ip, alert_type, severity, message))
+                (ip_address, alert_type, severity,
+                 message, description)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (ip, alert_type, severity, message, message))
         db.commit()
 
-        print(f'✅ [ALERT CREATED] '
-              f'[{severity.upper()}] '
+        print(f'✅ [ALERT CREATED] [{severity.upper()}] '
               f'{alert_type} — {ip}')
 
-        _send_alert_email(ip, alert_type,
-                          severity, message)
+        _send_alert_email(ip, alert_type, severity, message)
 
     except Exception as e:
         print(f'[INSERT ERROR] {e}')
+        import traceback
+        traceback.print_exc()
 
 
 # ══════════════════════════════════════════════════════════════

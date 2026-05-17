@@ -4,6 +4,15 @@
 {% block page_title %}
     <i class="bi bi-exclamation-triangle-fill me-2"></i>Security Alerts
 {% endblock %}
+<!-- Run Detection Now button -->
+<form method="POST"
+      action="{{ url_for('run_detection_now') }}"
+      style="margin-bottom:20px;">
+    <button type="submit" class="btn btn-purple">
+        <i class="bi bi-lightning-fill me-1"></i>
+        Run Detection on All Logs Now
+    </button>
+</form>
 
 {% block content %}
 

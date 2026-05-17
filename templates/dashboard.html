@@ -9,95 +9,83 @@
 </div>
 
 <!-- ── STAT CARDS ──────────────────────────────────────────── -->
-<div class="stats-mobile-grid mb-4">
+<div class="row g-3 mb-4">
 
-    <div class="stat-card">
-        <div class="stat-icon blue">
-            <i class="bi bi-journal-text"></i>
-        </div>
-        <div class="stat-info">
-            <h3>{{ total_logs }}</h3>
-            <p>Total Logs</p>
-            <p style="font-size:10px;
-                      color:var(--success);">
-                ↑ Live
-            </p>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="stat-card">
+            <div class="stat-icon blue">
+                <i class="bi bi-journal-text"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ total_logs }}</h3>
+                <p>Total Logs</p>
+            </div>
         </div>
     </div>
 
-    <div class="stat-card"
-         onclick="window.location='{{ url_for('alerts') }}'"
-         style="cursor:pointer;">
-        <div class="stat-icon red">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-        </div>
-        <div class="stat-info">
-            <h3>{{ total_alerts }}</h3>
-            <p>Open Alerts</p>
-            <p style="font-size:10px;
-                      color:var(--danger);">
-                ↑ Threats
-            </p>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="stat-card"
+             onclick="window.location='{{ url_for('alerts') }}'"
+             style="cursor:pointer;">
+            <div class="stat-icon red">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ total_alerts }}</h3>
+                <p>Open Alerts</p>
+            </div>
         </div>
     </div>
 
-    <div class="stat-card">
-        <div class="stat-icon yellow">
-            <i class="bi bi-slash-circle-fill"></i>
-        </div>
-        <div class="stat-info">
-            <h3>{{ total_blocked }}</h3>
-            <p>Blocked IPs</p>
-            <p style="font-size:10px;
-                      color:var(--warning);">
-                ⛊ Safe
-            </p>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="stat-card">
+            <div class="stat-icon yellow">
+                <i class="bi bi-slash-circle-fill"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ total_blocked }}</h3>
+                <p>Blocked IPs</p>
+            </div>
         </div>
     </div>
 
-    <div class="stat-card">
-        <div class="stat-icon green">
-            <i class="bi bi-check-circle-fill"></i>
-        </div>
-        <div class="stat-info">
-            <h3>{{ total_resolved }}</h3>
-            <p>Resolved Alerts</p>
-            <p style="font-size:10px;
-                      color:var(--success);">
-                ✓ Clear
-            </p>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="stat-card">
+            <div class="stat-icon green">
+                <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ total_resolved }}</h3>
+                <p>Resolved</p>
+            </div>
         </div>
     </div>
 
-    <div class="stat-card"
-         onclick="window.location='{{ url_for('it_support') }}'"
-         style="cursor:pointer;">
-        <div class="stat-icon purple">
-            <i class="bi bi-headset"></i>
-        </div>
-        <div class="stat-info">
-            <h3>{{ open_tickets }}</h3>
-            <p>Open Tickets</p>
-            <p style="font-size:10px;
-                      color:var(--accent);">
-                → View
-            </p>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="stat-card"
+             onclick="window.location='{{ url_for('it_support') }}'"
+             style="cursor:pointer;">
+            <div class="stat-icon purple">
+                <i class="bi bi-headset"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ open_tickets }}</h3>
+                <p>Tickets</p>
+            </div>
         </div>
     </div>
 
-    <div class="stat-card"
-         onclick="window.location='{{ url_for('banking_alerts') }}'"
-         style="cursor:pointer;">
-        <div class="stat-icon yellow">
-            <i class="bi bi-bank2"></i>
-        </div>
-        <div class="stat-info">
-            <h3>{{ pending_tx }}</h3>
-            <p>Pending TX</p>
-            <p style="font-size:10px;
-                      color:var(--warning);">
-                → Review
-            </p>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="stat-card"
+             onclick="window.location='{{ url_for('banking_alerts') }}'"
+             style="cursor:pointer;">
+            <div class="stat-icon yellow">
+                <i class="bi bi-bank2"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ pending_tx }}</h3>
+                <p>Pending TX</p>
+            </div>
         </div>
     </div>
 
